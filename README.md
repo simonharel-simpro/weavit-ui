@@ -18,6 +18,26 @@ against **any** Weaviate instance (local, self-hosted, or Weaviate Cloud).
 
 ---
 
+## Fork notes
+
+This is a fork of [XenoraAI/weavit-ui](https://github.com/XenoraAI/weavit-ui) (Apache-2.0),
+used as a tool inside the `data-lab` project. `LICENSE` and `NOTICE` are kept unchanged.
+
+**Auto-connect on launch.** At startup the app connects by itself to one saved profile, and
+only when that profile provably targets data-lab's local Weaviate:
+
+- its name is exactly `data-lab` (reserved; two profiles with that name → no auto-connect);
+- its type is **Local**, with host `127.0.0.1`, `localhost`, or left empty (empty means `localhost`);
+- its HTTP port is **8090** and its gRPC port is **50052**, both set explicitly.
+
+The ports must be filled in: an empty port falls back to `8080` / `50051`, which belong to a
+different Weaviate (Demo-RAG) on the same machine, so a blank field would silently open the
+wrong database. Such a profile is skipped, never "repaired". If nothing qualifies, the app
+starts as usual; if the connection fails, the normal error status is shown — no retry and no
+other profile is tried. The skip reason is logged to the devtools console (`autoconnect skip: …`).
+
+---
+
 ## Screenshots
 
 ![Browsing a Weaviate collection in the Weavit UI GUI, with an object open on its Properties, JSON, Vectors and Metadata tabs](docs/screenshots/3.png)
