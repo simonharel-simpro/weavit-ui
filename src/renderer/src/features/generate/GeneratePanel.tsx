@@ -38,7 +38,8 @@ import { api } from '../../lib/api'
 import { notifyErr } from '../../lib/notify'
 import { pickBinaryFile } from '../../lib/exportFile'
 import { FilterBuilder } from '../query/FilterBuilder'
-import { findPreset, PRESETS } from './presets'
+import { findPreset, PRESETS, resolveGroupedTask } from './presets'
+import { runBlocker } from './runBlocker'
 import { AdvancedOptions } from '../query/AdvancedOptions'
 
 interface Props {
@@ -169,6 +170,7 @@ export function GeneratePanel({
       setProvider(preset.provider)
       setBaseUrl(preset.baseUrl)
       setModel(preset.model)
+      if (!groupedTask.trim() && !singlePrompt.trim()) setGroupedTask(preset.groupedTask)
       return
     }
     setProvider((value ?? COLLECTION_DEFAULT) as GenerativeProvider | '')
@@ -214,7 +216,7 @@ export function GeneratePanel({
       return api.query.generate({
         search: { ...search, requestId },
         singlePrompt: singlePrompt.trim() || undefined,
-        groupedTask: groupedTask.trim() || undefined,
+        groupedTask: resolveGroupedTask(groupedTask, queryText).trim() || undefined,
         groupedProperties,
         imageProperties,
         provider: provider || undefined,
@@ -258,8 +260,13 @@ export function GeneratePanel({
   // Weaviate produces no per-object generation under groupBy and fails the whole
   // query with "No results for generative search" — only a grouped task works.
   const groupByConflict = Boolean(search.groupBy?.property) && Boolean(singlePrompt.trim())
-  const canRun =
-    hasProvider && (singlePrompt.trim() || groupedTask.trim()) && hasQueryTerm && !groupByConflict
+  const blocker = runBlocker({
+    hasProvider,
+    hasPrompt: Boolean(singlePrompt.trim() || groupedTask.trim()),
+    hasQueryTerm,
+    groupByConflict
+  })
+  const canRun = blocker === undefined
 
   return (
     <Box p="md" style={{ height: '100%', overflow: 'auto' }}>
@@ -519,7 +526,7 @@ export function GeneratePanel({
           />
           <Textarea
             label="Grouped task"
-            description="Runs once over every retrieved object together."
+            description="Runs once over every retrieved object together. {query} is replaced by the search text."
             placeholder="What themes do these documents have in common?"
             autosize
             minRows={2}
@@ -562,6 +569,11 @@ export function GeneratePanel({
           </Group>
 
           <Group justify="flex-end" gap="xs">
+            {blocker && (
+              <Text size="sm" c="dimmed">
+                {blocker}
+              </Text>
+            )}
             {run.isPending && (
               <Button variant="light" color="gray" onClick={cancelRun}>
                 Cancel

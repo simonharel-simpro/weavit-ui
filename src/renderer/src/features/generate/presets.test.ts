@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { buildGenerativeConfig } from '../../../../main/weaviate/generate'
-import { findPreset, OPENROUTER } from './presets'
+import { findPreset, OPENROUTER, resolveGroupedTask } from './presets'
 
 describe('provider presets', () => {
   it('finds the OpenRouter preset by its select value and nothing else', () => {
@@ -22,5 +22,19 @@ describe('provider presets', () => {
       name: 'generative-openai',
       config: { baseUrl: 'https://openrouter.ai/api', model: 'deepseek/deepseek-v4-flash' }
     })
+  })
+})
+
+describe('resolveGroupedTask', () => {
+  it('puts the search text into every {query} slot', () => {
+    expect(resolveGroupedTask('Q: {query} / again {query}', '  which port?  ')).toBe('Q: which port? / again which port?')
+  })
+
+  it('leaves a task without a slot untouched', () => {
+    expect(resolveGroupedTask('Summarise these.', 'x')).toBe('Summarise these.')
+  })
+
+  it("gives the OpenRouter preset's task the question", () => {
+    expect(resolveGroupedTask(OPENROUTER.groupedTask, 'Which port?')).toContain('Question: Which port?')
   })
 })
