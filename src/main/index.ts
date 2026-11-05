@@ -1,14 +1,17 @@
 import { app, shell, BrowserWindow, session, nativeImage } from 'electron'
 import { join } from 'node:path'
 import appIcon from '../../resources/icon.png?asset'
-import { registerIpc } from './ipc/registry'
+import { registerIpc } from './ipc/electron'
 import { closeAll } from './weaviate/connectionManager'
 import { migrateLegacyData } from './store/store'
+import { setStoreHost } from './store/host'
+import { electronHost } from './store/electronHost'
 
 // Display name for menus, About, notifications, and packaged builds. (In `dev`
 // the macOS dock tooltip still shows "Electron" — that's the dev runner binary;
 // the packaged app's bundle is named "Weavit UI".)
 app.setName('Weavit UI')
+setStoreHost(electronHost)
 
 const isDev = !!process.env['ELECTRON_RENDERER_URL']
 

@@ -3,6 +3,7 @@ import { api } from '../../lib/api'
 import { useConnect } from '../../lib/useConnect'
 import { useApp } from '../../store'
 import { autoConnectOnce } from './autoConnect'
+import { collectionFromSearch } from './deepLink'
 
 // The only auto-connect file that touches api/React/the store; the policy lives
 // in autoConnect.ts so it stays unit-testable in the node test environment.
@@ -17,6 +18,12 @@ export function useAutoConnectOnLaunch(): void {
       connect,
       hasActive: () => !!useApp.getState().activeConnectionId,
       onSkip: (r) => console.info('autoconnect skip:', r)
-    }).catch(console.error)
+    })
+      .then((connected) => {
+        // Web mode deep link (?collection=Name); the desktop app has no query string.
+        const collection = collectionFromSearch(window.location.search)
+        if (connected && collection) useApp.getState().selectCollection(collection)
+      })
+      .catch(console.error)
   }, [])
 }
