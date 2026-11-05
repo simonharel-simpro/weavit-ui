@@ -10,8 +10,10 @@ import { CreateCollectionModal } from '../features/schema/CreateCollectionModal'
 import { CommandPalette } from '../features/palette/CommandPalette'
 import { useApp } from '../store'
 import { useConnect } from '../lib/useConnect'
+import { useAutoConnectOnLaunch } from '../features/connections/useAutoConnectOnLaunch'
 
 export function App() {
+  useAutoConnectOnLaunch()
   const [connModal, setConnModal] = useState<{ open: boolean; editing?: ConnectionWithSecretFlag }>({
     open: false
   })

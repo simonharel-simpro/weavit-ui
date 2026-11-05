@@ -1,4 +1,3 @@
-import { ipcMain } from 'electron'
 import { randomUUID } from 'node:crypto'
 import { CH } from '@shared/channels'
 import type {
@@ -78,17 +77,24 @@ function cancellable<T>(
   return fn(controller.signal).finally(() => inFlight.delete(requestId))
 }
 
-// Wrap a handler so thrown errors reach the renderer as a rejected invoke.
+export type Handler = (...args: unknown[]) => unknown
+/** Binds one channel to its handler: `ipcMain.handle` on desktop, a route table in web mode. */
+export type Register = (channel: string, fn: Handler) => void
+
+let register: Register = () => {
+  throw new Error('registerHandlers() must run before any handler is bound')
+}
+
+// Thrown errors reach the renderer as a rejected invoke (IPC) or an error response (web).
 function handle<Args extends unknown[], R>(
   channel: string,
   fn: (...args: Args) => Promise<R> | R
 ): void {
-  ipcMain.handle(channel, async (_event, ...args: unknown[]) => {
-    return fn(...(args as Args))
-  })
+  register(channel, fn as unknown as Handler)
 }
 
-export function registerIpc(): void {
+export function registerHandlers(on: Register): void {
+  register = on
   // ── Connections ───────────────────────────────────────────────────────────
   handle(CH.connections.list, () => withFlags(loadConnections()))
 

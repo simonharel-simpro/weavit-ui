@@ -1,6 +1,7 @@
 import weaviate, { type WeaviateClient } from 'weaviate-client'
 import type { ConnectionConfig } from '@shared/types'
 import { loadConnections, getSecret } from '../store/store'
+import { mergedHeaders } from './extraHeaders'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -74,7 +75,7 @@ function proxyParams(cfg: ConnectionConfig): any | undefined {
 
 async function build(cfg: ConnectionConfig): Promise<WeaviateClient> {
   const authCreds = authCredentials(cfg)
-  const headers = cfg.headers && Object.keys(cfg.headers).length ? cfg.headers : undefined
+  const headers = mergedHeaders(cfg.headers)
   const timeout = timeoutParams(cfg)
   const proxies = proxyParams(cfg)
   const skipInitChecks = cfg.skipInitChecks || undefined

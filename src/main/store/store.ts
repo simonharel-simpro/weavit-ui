@@ -1,15 +1,16 @@
-import { app, safeStorage } from 'electron'
 import { randomUUID } from 'node:crypto'
 import { readFileSync, writeFileSync, existsSync, mkdirSync, copyFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { ConnectionConfig, HistoryEntry, SavedQuery } from '@shared/types'
+import { storeHost } from './host'
 
-// Simple JSON-file persistence living in the OS userData dir. Connection
-// profiles (non-secret) are stored as plain JSON; API keys are encrypted with
-// Electron safeStorage (OS keychain) and stored separately.
+// Simple JSON-file persistence living in the host's data dir (Electron userData
+// on desktop). Connection profiles (non-secret) are stored as plain JSON; API
+// keys are encrypted by the host (OS keychain on desktop) and stored separately,
+// or kept in memory only when the host does not persist secrets (web mode).
 
 function dataDir(): string {
-  const dir = app.getPath('userData')
+  const dir = storeHost().dataDir()
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
   return dir
 }
@@ -28,8 +29,8 @@ const LEGACY_APP_DIRS = ['weavit-ui', 'weft', 'Weft', 'Electron']
 
 export function migrateLegacyData(): void {
   try {
-    if (existsSync(connectionsFile())) return
-    const appData = app.getPath('appData')
+    const appData = storeHost().appDataDir()
+    if (!appData || existsSync(connectionsFile())) return
     for (const dir of LEGACY_APP_DIRS) {
       const legacyConn = join(appData, dir, 'weft-connections.json')
       if (existsSync(legacyConn) && join(appData, dir) !== dataDir()) {
@@ -71,11 +72,19 @@ export function saveConnections(connections: ConnectionConfig[]): void {
 
 type SecretMap = Record<string, string> // connectionId -> base64 payload
 
+// Used instead of the secrets file when the host does not persist secrets.
+let memorySecrets: SecretMap = {}
+
 function loadSecrets(): SecretMap {
+  if (!storeHost().persistSecrets) return { ...memorySecrets }
   return readJson<SecretMap>(secretsFile(), {})
 }
 
 function persistSecrets(map: SecretMap): void {
+  if (!storeHost().persistSecrets) {
+    memorySecrets = { ...map }
+    return
+  }
   writeJson(secretsFile(), map)
 }
 
@@ -88,8 +97,9 @@ export function setSecret(connectionId: string, apiKey: string | null | undefine
     persistSecrets(map)
     return
   }
-  if (safeStorage.isEncryptionAvailable()) {
-    map[connectionId] = safeStorage.encryptString(apiKey).toString('base64')
+  const encrypted = storeHost().encrypt(apiKey)
+  if (encrypted !== null) {
+    map[connectionId] = encrypted
   } else {
     // No OS keychain (e.g. headless Linux). Degrade to base64 with a marker so
     // we never silently claim encryption we didn't do.
@@ -106,7 +116,7 @@ export function getSecret(connectionId: string): string | null {
     if (payload.startsWith(PLAIN_PREFIX)) {
       return Buffer.from(payload.slice(PLAIN_PREFIX.length), 'base64').toString('utf-8')
     }
-    return safeStorage.decryptString(Buffer.from(payload, 'base64'))
+    return storeHost().decrypt(payload)
   } catch {
     return null
   }
