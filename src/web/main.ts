@@ -5,6 +5,7 @@ import { setStoreHost } from '../main/store/host'
 import { webHost } from './webHost'
 import { seedDataLabProfile } from './seed'
 import { createWebServer } from './server'
+import { setExtraHeaders } from '../main/weaviate/extraHeaders'
 
 // Same policy as the desktop main process: a dropped Weaviate/gRPC connection
 // must not take the whole server down.
@@ -25,6 +26,14 @@ const listenPort = port()
 setStoreHost(webHost())
 if (process.env['WEAVIT_SEED_DATALAB'] === '1' && seedDataLabProfile()) {
   console.log('[weavit-web] created the data-lab connection profile')
+}
+
+// Read once, kept in memory: sent to Weaviate as the OpenAI-module key for the
+// OpenRouter preset, never written to a profile nor returned to the browser.
+const openRouterKey = process.env['WEAVIT_OPENROUTER_API_KEY']
+if (openRouterKey) {
+  setExtraHeaders({ 'X-OpenAI-Api-Key': openRouterKey })
+  console.log('[weavit-web] OpenRouter key loaded from WEAVIT_OPENROUTER_API_KEY')
 }
 
 const handlers = new Map<string, Handler>()
