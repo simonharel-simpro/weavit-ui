@@ -1,6 +1,7 @@
 // Protocol v1 between the host and the weavit-projector sidecar: a JSON header
 // line plus f32 LE rows on stdin, NDJSON messages on stdout. The fixtures in
 // native/projector/fixtures/protocol-v1/ pin both sides (S-14).
+import { endianness } from 'node:os'
 import { z } from 'zod'
 import { NN_DEFAULT } from '@shared/projection'
 import type { ProjectionMethod } from '@shared/types'
@@ -49,6 +50,19 @@ export function encodeHeader(h: Header): string {
   const { epochs, seed, frameEvery, batchRows, fitRows } = h
   const line = { protocol, nMax, dim, method, dims, pcaDims, nNeighbors, minDist, epochs, seed }
   return JSON.stringify({ ...line, frameEvery, batchRows, fitRows }) + '\n'
+}
+
+/** f32 values as the wire's little-endian bytes; a view, not a copy, on an LE host. */
+export function f32Bytes(a: Float32Array): Buffer {
+  if (endianness() === 'LE') return Buffer.from(a.buffer, a.byteOffset, a.byteLength)
+  const buf = Buffer.alloc(a.length * 4)
+  for (let i = 0; i < a.length; i++) buf.writeFloatLE(a[i], i * 4)
+  return buf
+}
+
+/** The inverse of `decodeF32` (src/shared/projection.ts). */
+export function encodeF32(a: Float32Array): string {
+  return f32Bytes(a).toString('base64')
 }
 
 const B64 = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/

@@ -73,3 +73,35 @@
 - Territory was: with electron-builder 26 the tree has only glob 7.2.3, which is outside `>=9 <=14.0.1`. With the ignores removed, the audit shows only the minimatch advisory (via app-builder-lib and @electron/universal). The summary reads "1 moderate (1 ignored)".
 - I did: kept both IDs in `ignoreGhsas` as specified (the glob entry has no effect). The override map has 16 selectors: the table's rows expand to 16, not the 15 stated. A new `allowBuilds` placeholder, `electron-winstaller`, was set to `false`; it is Windows-installer only, and `pack:dir` passes without it.
 - One-off or pattern?: one-off
+
+# Phase 2b deviations
+
+## session.ts would be 272 lines; the run driver moved to drive.ts
+- Plan assumed: `session.ts` (≤ 200 lines) holds the slot, the read/selection streaming and the event routing.
+- Territory was: with the read loop, the selection writer, the sidecar wiring and start ordering, the file came to 272 lines.
+- I did: `drive.ts` (141) owns `launch`/`read`/`select`, the sidecar wiring and the per-run event guards; `session.ts` (161) keeps the deps, validation, U-46 ordering, status/cancel/placeQuery/dispose and `createDefaultProjectionSession`. Public API unchanged.
+- One-off or pattern?: one-off
+
+## Contracts the spec used but Phase 2a did not ship
+- Plan assumed: an f32 encoder for `status.pca`/`umap` and the stdin rows, a `n` field on `Run`, and the session knowing whether the read is filtered.
+- Territory was: only `decodeF32` existed; the `Run` interface has no `n` although the transition table writes it; `buildFilter` can return nothing for a non-empty `filters` list.
+- I did: added `encodeF32` + `f32Bytes` (a zero-copy view on little-endian hosts, a `writeFloatLE` loop otherwise) to `protocol.ts`; added `n` to `Run`; `collectionSource` also returns `filtered` (whether a filter was actually built) and omits `returnProperties` when there is no colourable prop. `scope.dim` is 0 until the first vector page fixes D.
+- One-off or pattern?: one-off
+
+## A cancel drops the page in flight
+- Plan assumed: `isCancelled` is read between pages, so a cancelled read resolves with the rows read so far (U-51).
+- Territory was: a page fetched while the cancel lands would still be ingested (rows never streamed) or, if it rejects, or if the cancel's kill breaks a pending `sidecar.write`, `readVectors` rejects and the partial dataset is lost.
+- I did: the session wraps the source so a page that resolves or rejects after a cancel reads as `[]` (end of read), and a write rejected after a cancel is not an error. Tests: "U-51: should serve points for a cancelled read" (page 3 resolves after the cancel, 2 000 points) and "…when a cancel interrupts a pending write".
+- One-off or pattern?: likely recurs: any cancel of a paged read that streams into a child.
+
+## Start ordering details
+- Plan assumed: a new start kills the running child; F-8 rejects before any object read.
+- Territory was: the plan does not say whether a start that later fails validation (or loses the U-46 race) has already killed the running run.
+- I did: the old run is superseded and killed only when the new start commits (after validation, binary resolution and the generation check), so a rejected start leaves a healthy run alone. The binary is resolved right after the request parse, before `getConfig`, so F-8 rejects without any network call. A selection while the read is still running is told "still being read"; one on a cancelled read gets the U-30 text even before the partial dataset has landed.
+- One-off or pattern?: one-off
+
+## Placement edge cases the plan leaves open
+- Plan assumed: hit weights are `score`, `max(ε, 1 − d)` or `(d_max − d) + ε`; all ≤ 0 → plain mean.
+- Territory was: a hit can lack the field it is ranked by, scores can be negative next to positive ones, and a zero query vector has no cosine direction.
+- I did: a hit missing its field weighs 0; a negative score weighs 0 (`max(0, score)`, so the marker stays inside the hull; all zero → `mean` as specified); a zero vector under cosine → `{placed:false, reason:'a zero vector has no cosine direction'}`. `deps.now` only times the run in the terminal log line; the 60 s watchdog stays on the sidecar's own timers.
+- One-off or pattern?: one-off
