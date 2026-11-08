@@ -105,3 +105,17 @@
 - Territory was: a hit can lack the field it is ranked by, scores can be negative next to positive ones, and a zero query vector has no cosine direction.
 - I did: a hit missing its field weighs 0; a negative score weighs 0 (`max(0, score)`, so the marker stays inside the hull; all zero → `mean` as specified); a zero vector under cosine → `{placed:false, reason:'a zero vector has no cosine direction'}`. `deps.now` only times the run in the terminal log line; the 60 s watchdog stays on the sidecar's own timers.
 - One-off or pattern?: one-off
+
+# Phase 3 deviations
+
+## The pinned @loaders.gl/core 4.4.5 does not satisfy a transitive peer
+- Plan assumed: pinning `@loaders.gl/core@4.4.5` (deck.gl asks `^4.4.3`) leaves no peer issue.
+- Territory was: `@deck.gl/layers` resolves `@loaders.gl/images@4.5.4`, which peers `@loaders.gl/core ~4.5.0`; `pnpm peers check` reports it unmet. Install, both builds and the pnpm 9 frozen install pass. Only the image loaders (Bitmap/Icon layers, unused here) could be affected.
+- I did: kept the planned pins. A planner may prefer `@loaders.gl/core@4.5.4`, if it clears the 14-day rule.
+- One-off or pattern?: likely recurs: any exact-pin plan for a package family whose transitive deps float.
+
+## Coverage glob and lazy tab
+- Plan assumed: only `useProjectionRun.ts` is React glue excluded from coverage; the tab is imported directly.
+- Territory was: a second hook, `useProjectionView.ts`, holds the decode and colour memoisation; deck.gl is ~660 kB, most of the bundle.
+- I did: `vitest.config.ts` excludes `projection/use*.ts`; `ProjectionPanel` is `React.lazy` in `CollectionView.tsx`. Extra files beyond the plan's eight: camera.ts (pure, tested), ProjectionTooltip, ProjectionLegend, ProjectionStatusLine, ProjectionObjectDrawer, useProjectionView, lib/query-keys.ts, status.fixtures.ts.
+- One-off or pattern?: one-off
