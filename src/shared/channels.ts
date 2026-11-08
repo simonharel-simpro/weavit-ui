@@ -113,5 +113,11 @@ export const CH = {
     listSaved: 'history:listSaved',
     save: 'history:save',
     deleteSaved: 'history:deleteSaved'
+  },
+  projection: {
+    start: 'projection:start',
+    status: 'projection:status',
+    cancel: 'projection:cancel',
+    placeQuery: 'projection:placeQuery'
   }
 } as const

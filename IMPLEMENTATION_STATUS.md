@@ -5,7 +5,7 @@
 | Phase | Title | Status | Branch |
 |-------|-------|--------|--------|
 | 1 | Rust sidecar `weavit-projector` + Rust CI job + pre-commit | ✅ landed @ 2ae261e (/check clean, fix-check 1 iter) | `phase-1-rust-sidecar` |
-| 2a | Host core: shared contracts, protocol, sidecar, read, validate | ⏳ pending | — |
+| 2a | Host core: shared contracts, protocol, sidecar, read, validate | 🔄 implemented, awaiting /check | `phase-2a-host-core` |
 | 2b | Host session, run state, placement, channels, hosts wiring | ⏳ pending | — |
 | 3 | Renderer: Projection tab (deck.gl 2D/3D, controls, colour, progress) | ⏳ pending | — |
 | 4 | Selection (lasso, breadcrumb) + query overlay | ⏳ pending | — |
@@ -16,3 +16,9 @@
 - New: `native/projector/` (protocol v1, input, pca + Jacobi, exact kNN, umap_run, stream), 23 protocol fixtures, tests; `.pre-commit-config.yaml`; CI job `projector`.
 - Escalation ESC-1-1 (reversible): `repulsion_strength = 0.5` compensates umap-rs 0.4.5 halving attraction.
 - Local note: pnpm 11 on this machine needs `pnpm_config_verify_deps_before_run=false` (`pnpm-workspace.yaml` `allowBuilds` placeholders); CI uses pnpm 9.
+
+## Phase 2a — Host core
+**Implemented:** 2026-11-07 · **Agent:** general-purpose · **Tooling (agent):** typecheck 0, vitest 425 passed, coverage lines 99.35 % (floor 70), pre-commit green
+- New: `src/shared/projection.ts`, `src/main/projection/{protocol,binary,sidecar,validate,readVectors}.ts` + tests, `guards.test.ts`.
+- Modified: `shared/{types,channels,api}.ts`, `weaviate/collections.ts` (multiVector/distance), vitest coverage, CI `test:coverage`, `@vitest/coverage-v8@5.0.5`.
+- Deviations (IMPLEMENTATION_NOTES.md): lazy `onStart`; a cap cut mid-page counts as truncated; filtered reads stop at offset 10 000; sidecar outcome precedence.

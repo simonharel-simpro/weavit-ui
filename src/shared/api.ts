@@ -16,6 +16,9 @@ import type {
   InsertObjectRequest,
   InvertedIndexName,
   PermissionInput,
+  PlaceQueryRequest,
+  ProjectionStartRequest,
+  ProjectionStatusOptions,
   RawGraphQLRequest,
   RawRestRequest,
   ReferenceMutationRequest,
@@ -218,6 +221,13 @@ export function buildApi(invoke: Invoke): WeftApi {
       listSaved: () => invoke(CH.history.listSaved),
       save: (q: Omit<SavedQuery, 'id' | 'savedAt'>) => invoke(CH.history.save, q),
       deleteSaved: (id: string) => invoke(CH.history.deleteSaved, id)
+    },
+    projection: {
+      start: (req: ProjectionStartRequest) => invoke(CH.projection.start, req),
+      status: (jobId: string, opts?: ProjectionStatusOptions) =>
+        invoke(CH.projection.status, jobId, opts),
+      cancel: (jobId: string) => invoke(CH.projection.cancel, jobId),
+      placeQuery: (req: PlaceQueryRequest) => invoke(CH.projection.placeQuery, req)
     }
   }
 }
