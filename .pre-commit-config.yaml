@@ -32,3 +32,10 @@ repos:
         pass_filenames: false
         always_run: true
         stages: [pre-push]
+      - id: cargo-xtask-lint
+        name: cargo xtask lint
+        entry: bash -c 'cd native/projector && cargo xtask lint'
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]

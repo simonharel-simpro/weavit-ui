@@ -4,6 +4,10 @@ version = "0.1.0"
 edition = "2024"
 description = "Streaming PCA + exact kNN + UMAP sidecar for the Weavit UI Projection tab"
 publish = false
+license = "Apache-2.0"
+
+[workspace]
+members = [".", "xtask"]
 
 [lib]
 name = "weavit_projector"

@@ -40,5 +40,6 @@ jobs:
           tool: cargo-llvm-cov@0.9.1
       - run: cargo fmt --check
       - run: cargo clippy --all-targets -- -D warnings
+      - run: cargo xtask lint
       - run: cargo test --locked
       - run: cargo llvm-cov --locked --fail-under-lines 70

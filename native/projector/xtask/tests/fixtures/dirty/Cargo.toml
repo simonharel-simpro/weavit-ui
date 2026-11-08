@@ -1,0 +1,10 @@
+# Fixture crate (not compiled — scanned by the linters as test data).
+# Declares rmcp so the mcp-stdout-purity check activates.
+[package]
+name = "dirty-fixture"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+rmcp = { version = "0.16", features = ["server", "macros", "transport-io"] }
+clap = { version = "4", features = ["derive"] }

@@ -15,3 +15,9 @@
 ## Escalations
 - ESCALATION(ESC-1-1) [open] phase=1 tier=reversible :: UMAP repulsion_strength=0.5 to compensate umap-rs 0.4.5 halving attraction (move-other lost in step_epochs); confirm the value or switch crate
 
+## Gate-gap fixes (cargo xtask lint, cargo deny)
+- Deviation: installed the linters recipe `xtask/` + `.cargo/config.toml` only; no githooks/justfile (repo uses pre-commit). Hook `cargo-xtask-lint` added (pre-push) and a `cargo xtask lint` step in the CI `projector` job. The root manifest is now a workspace (members `.` and `xtask`); root stays the default member, so `cargo build --release` and the binary path are unchanged.
+- Deviation: `cargo deny check` is NOT in pre-commit or CI (not requested); it passes locally with `native/projector/deny.toml`.
+- Added `license = "Apache-2.0"` to the crate and to xtask (xtask is std-only, no new runtime dependency).
+- deny.toml allow-list: MIT, Apache-2.0, Apache-2.0 WITH LLVM-exception, BSD-2/3-Clause, Unicode-3.0. `cargo deny list` also shows LGPL-2.1-or-later (r-efi, Windows/UEFI-only transitive dep of getrandom, tri-licensed MIT OR Apache-2.0 OR LGPL) and Unlicense (memchr, Unlicense OR MIT). Neither is allowed; both are satisfied via their MIT option. No copyleft was allowed.
+- `cargo xtask lint` reported no violations in the crate's own code; nothing was loosened.
