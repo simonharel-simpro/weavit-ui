@@ -4,7 +4,7 @@
 
 | Phase | Title | Status | Branch |
 |-------|-------|--------|--------|
-| 1 | Rust sidecar `weavit-projector` + Rust CI job + pre-commit | 🔄 implemented, awaiting /check | `phase-1-rust-sidecar` |
+| 1 | Rust sidecar `weavit-projector` + Rust CI job + pre-commit | ✅ landed @ 2ae261e (/check clean, fix-check 1 iter) | `phase-1-rust-sidecar` |
 | 2a | Host core: shared contracts, protocol, sidecar, read, validate | ⏳ pending | — |
 | 2b | Host session, run state, placement, channels, hosts wiring | ⏳ pending | — |
 | 3 | Renderer: Projection tab (deck.gl 2D/3D, controls, colour, progress) | ⏳ pending | — |
