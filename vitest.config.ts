@@ -7,6 +7,13 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
-    include: ['src/**/*.test.ts']
+    include: ['src/**/*.test.ts'],
+    coverage: {
+      provider: 'v8',
+      include: ['src/main/projection/**', 'src/renderer/src/features/projection/*.ts'],
+      // The hook is React glue; its decisions live in pure helpers in frame.ts.
+      exclude: ['**/*.test.ts', 'src/renderer/src/features/projection/useProjectionRun.ts'],
+      thresholds: { lines: 70 }
+    }
   }
 })
