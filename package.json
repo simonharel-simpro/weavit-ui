@@ -46,6 +46,7 @@
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json --composite false",
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json --composite false",
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
+    "lint": "eslint .",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "projector:build": "cargo build --release --manifest-path native/projector/Cargo.toml",
@@ -53,7 +54,8 @@
     "dist": "npm run build && electron-builder",
     "dist:mac": "npm run build && electron-builder --mac --x64 --arm64",
     "dist:win": "npm run build && electron-builder --win --x64",
-    "dist:linux": "npm run build && electron-builder --linux --x64"
+    "dist:linux": "npm run build && electron-builder --linux --x64",
+    "electron:install": "install-electron"
   },
   "dependencies": {
     "weaviate-client": "^3.14.0"
@@ -73,18 +75,41 @@
     "@uiw/react-codemirror": "^4.23.7",
     "@vitejs/plugin-react": "^6.1.2",
     "@vitest/coverage-v8": "5.0.5",
-    "electron": "^37.2.0",
-    "electron-builder": "^25.1.8",
+    "electron": "43.8.3",
+    "electron-builder": "26.18.0",
     "electron-vite": "^6.0.0",
+    "eslint": "10.13.0",
+    "eslint-plugin-react-hooks": "7.1.1",
     "postcss": "^8.4.49",
     "postcss-preset-mantine": "^1.17.0",
     "postcss-simple-vars": "^7.0.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "typescript": "^5.7.2",
+    "typescript-eslint": "8.72.0",
     "vite": "^8.3.5",
     "vitest": "^5.0.5",
-    "zod": "^3.24.1",
+    "zod": "4.6.7",
     "zustand": "^5.0.2"
+  },
+  "pnpm": {
+    "overrides": {
+      "nanoid@<3.3.18": "3.3.20",
+      "source-map-js@<1.2.2": "1.2.2",
+      "tar@<7.5.21": "7.5.22",
+      "js-yaml@>=4.0.0 <4.3.2": "4.3.2",
+      "js-yaml@>=3.0.0 <3.15.2": "3.15.2",
+      "@xmldom/xmldom@>=0.9.0 <0.9.12": "0.9.12",
+      "@xmldom/xmldom@>=0.7.0 <0.8.15": "0.8.15",
+      "ip-address@<10.7.4": "10.7.4",
+      "brace-expansion@<1.1.21": "1.1.21",
+      "brace-expansion@>=2.0.0 <2.1.7": "2.1.7",
+      "brace-expansion@>=3.0.0 <3.0.9": "3.0.9",
+      "brace-expansion@>=4.0.0 <5.0.12": "5.0.12",
+      "postcss-selector-parser@>=7.0.0 <7.1.6": "7.1.6",
+      "@grpc/grpc-js@>=1.14.0 <1.14.5": "1.14.6",
+      "builder-util-runtime@<9.7.0": "9.7.0",
+      "electron>@types/node": "22.20.1"
+    }
   }
 }

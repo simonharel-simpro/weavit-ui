@@ -47,3 +47,29 @@
 - Territory was: the plan does not order a host kill reason (watchdog, or `kill(reason)` from the session) against the child's `error` message or the signal.
 - I did: protocol or hello failure > done + exit 0 > host kill reason > child `error` message > signal (+ stderr tail) > exit code (+ stderr tail). The stderr tail is also appended to the signal case. `ProtocolError` text does not echo the offending stdout line, so no payload reaches logs.
 - One-off or pattern?: one-off
+
+# Phase 0 deviations
+
+## The committed lockfile already failed the 14-day age rule
+- Plan assumed: if `minimumReleaseAgeStrict` blocks a package, pin its parent one patch lower.
+- Territory was: pnpm 11 checks the existing lockfile against the policy before it resolves anything. It rejected 20 transitive entries left by the Vite 8 upgrade (rolldown 1.2.16 and its 15 `@rolldown/binding-*`, `@oxc-project/types` 0.156.0, postcss 8.5.32, magic-string 1.4.5, tinybench 6.2.3, all published 2026-10-26 to 11-01). Their parents (vite 8.3.5, vitest 5.0.5, electron-vite 6.0.0) are old enough, and their ranges already accept older versions.
+- I did: no parent was pinned. I ran one `pnpm install --lockfile-only` with temporary overrides (rolldown 1.2.15, @oxc-project/types 0.155.0, postcss 8.5.31, magic-string 1.4.3, tinybench 6.2.2, all ≤ 2026-10-21), then removed them before the real install. The direct `postcss` moved from 8.5.25 to 8.5.31 within `^8.4.49`, so vite and the app now share one copy. With strict mode on, the final lockfile passes the policy check.
+- One-off or pattern?: likely recurs: any lockfile committed before `minimumReleaseAge` was turned on.
+
+## eslint-plugin-react-hooks 7 pulled in a second zod
+- Plan assumed: `pnpm why zod` shows only 4.6.7 once zod is pinned.
+- Territory was: eslint-plugin-react-hooks 7.1.1 and zod-validation-error accept `^3.25.0 || ^4.0.0`, and pnpm reused the zod 3.25.76 that was already locked.
+- I did: ran `pnpm dedupe`. Its only other change was picomatch 4.0.5 → 4.0.7 (2026-08-24) under tinyglobby.
+- One-off or pattern?: one-off
+
+## One `any` had no disable directive
+- Plan assumed: every file that uses `any` already carries the disable directive, and `no-explicit-any` stays error.
+- Territory was: `src/main/weaviate/filters.test.ts:38` (`Record<string, any>` in a fake of the client's filter namespace) had none. It is not dead code, so the "≤ 3 hits → delete dead code" rule did not apply.
+- I did: added one `eslint-disable-next-line @typescript-eslint/no-explicit-any` with a reason, matching the convention the other files use. The rule stays error, and the source total is 3 lines (budget 50).
+- One-off or pattern?: one-off
+
+## The glob GHSA no longer applies
+- Plan assumed: both GHSA-g3hv-75wg-m249 (minimatch) and GHSA-3g3m-2fjr-6pw4 (glob) remain after the upgrade.
+- Territory was: with electron-builder 26 the tree has only glob 7.2.3, which is outside `>=9 <=14.0.1`. With the ignores removed, the audit shows only the minimatch advisory (via app-builder-lib and @electron/universal). The summary reads "1 moderate (1 ignored)".
+- I did: kept both IDs in `ignoreGhsas` as specified (the glob entry has no effect). The override map has 16 selectors: the table's rows expand to 16, not the 15 stated. A new `allowBuilds` placeholder, `electron-winstaller`, was set to `false`; it is Windows-installer only, and `pack:dir` passes without it.
+- One-off or pattern?: one-off

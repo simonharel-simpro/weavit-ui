@@ -11,6 +11,13 @@ repos:
         pass_filenames: false
         always_run: true
         stages: [pre-push]
+      - id: eslint
+        name: eslint
+        entry: pnpm lint
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]
       - id: vitest
         name: vitest
         entry: pnpm test

@@ -18,6 +18,7 @@ Prerequisites: **Node.js ≥ 22** and **pnpm 9** (`npm install -g pnpm`).
 
 ```bash
 pnpm install        # install dependencies
+pnpm electron:install   # once: Electron ≥42 downloads its binary on demand
 pnpm dev            # run the app in development with hot reload
 ```
 

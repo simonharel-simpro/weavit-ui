@@ -22,3 +22,8 @@
 - New: `src/shared/projection.ts`, `src/main/projection/{protocol,binary,sidecar,validate,readVectors}.ts` + tests, `guards.test.ts`.
 - Modified: `shared/{types,channels,api}.ts`, `weaviate/collections.ts` (multiVector/distance), vitest coverage, CI `test:coverage`, `@vitest/coverage-v8@5.0.5`.
 - Deviations (IMPLEMENTATION_NOTES.md): lazy `onStart`; a cap cut mid-page counts as truncated; filtered reads stop at offset 10 000; sidecar outcome precedence.
+
+## Phase 0 — Fork hygiene (done on phase-2a-host-core, user decision 2026-11-07)
+- Electron 37 → 43.8.3, electron-builder 25 → 26.18.0, zod 3 → 4.6.7; ESLint 10 flat config (+ hook + CI step); 16 range overrides in both `pnpm-workspace.yaml` and `package.json#pnpm`; `packages: ['.']` repairs the pnpm 9 CI install.
+- `pnpm audit --audit-level=moderate` exit 0 (GHSA-g3hv-75wg-m249 / GHSA-3g3m-2fjr-6pw4 ignored until #34). typecheck, lint, 425 tests, build, web:build, pack:dir, pnpm 9 frozen install all pass.
+- Pending: GUI smoke of Electron 43 on a native display.

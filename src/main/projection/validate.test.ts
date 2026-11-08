@@ -133,6 +133,7 @@ describe('schemas', () => {
   it('channel args: status, cancel and placeQuery are parsed', () => {
     expect(statusArgsSchema.safeParse(['']).success).toBe(false)
     expect(statusArgsSchema.safeParse(['j', { since: 1.5 }]).success).toBe(false)
+    expect(statusArgsSchema.safeParse(['j']).success).toBe(true)
     expect(statusArgsSchema.parse(['j', { points: true, runId: 'r1' }])).toEqual([
       'j',
       { points: true, runId: 'r1' }
