@@ -7,7 +7,7 @@
 | 1 | Rust sidecar `weavit-projector` + Rust CI job + pre-commit | ✅ landed @ 2ae261e (/check clean, fix-check 1 iter) | `phase-1-rust-sidecar` |
 | 2a | Host core: shared contracts, protocol, sidecar, read, validate (+ Phase 0 fork hygiene) | ✅ landed @ 9c8e70b (/check clean after Phase 0) | `phase-2a-host-core` |
 | 2b | Host session, run state, placement, channels, hosts wiring | ✅ landed @ bdd806c (/check clean, fix-check 1 iter) | `phase-2b-host-session` |
-| 3 | Renderer: Projection tab (deck.gl 2D/3D, controls, colour, progress) | ⏳ pending | — |
+| 3 | Renderer: Projection tab (deck.gl 2D/3D, controls, colour, progress) | 🔄 implemented, awaiting /check | `phase-3-projection-tab` |
 | 4 | Selection (lasso, breadcrumb) + query overlay | ⏳ pending | — |
 | 5 | data-lab: ADRs, ARCHITECTURE.md, launcher, submodule bump | ⏳ after the fork PR merges (other repo) | — |
 
@@ -32,3 +32,7 @@
 **Implemented:** 2026-11-08 · **Agent:** general-purpose · **Tooling (agent):** typecheck 0, lint 0 errors, vitest 482 passed (lines 97 %), pre-commit green; live web-host run on MiniRag (41 pts): read → done, selection → done, unknown jobId → unknown, no orphan sidecar after SIGTERM
 - New: `projection/{place,state,run,source,session,drive}.ts` + tests, `ipc/registry.test.ts`; wiring in `ipc/registry.ts`, `ipc/electron.ts`, `main/index.ts`, `web/main.ts`; `encodeF32` in protocol.
 - Deviations (IMPLEMENTATION_NOTES.md): `drive.ts` split; contracts added (`encodeF32`, `Run.n`); cancel drops the in-flight page; supersede on commit only; placement edge weights.
+
+## Phase 3 — Renderer: Projection tab
+**Implemented:** 2026-11-08 · **Agent:** vite-react · **Tooling (agent):** typecheck 0, lint 0 errors, vitest 524 passed (features/projection 100 % lines), build + web:build OK, audit unchanged, pnpm 9 frozen install OK; HTTP-level run on MiniRag (pca 2D + umap 3D → done, points by runId). Browser check pending.
+- New: `features/projection/` (Canvas, Panel, Controls, StatusLine, ObjectDrawer, Tooltip, Legend, hooks, frame/defaults/colors/progress/camera + tests), `lib/query-keys.ts`; store slice + tab in `CollectionView`; deck.gl 9.3.11, luma.gl 9.3.6, loaders.gl pins.

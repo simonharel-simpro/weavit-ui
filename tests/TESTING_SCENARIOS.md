@@ -17,3 +17,9 @@
 | PRJ-13 | Cancel mid-read | cancel after page 1 | partial dataset, points served, lasso disabled | 🆕 New | Phase 2b |
 | PRJ-14 | Unknown job | status('nope') | {state:'unknown'}, no throw | 🆕 New | Phase 2b |
 | PRJ-15 | Web host shutdown | SIGTERM | no orphan sidecar | 🆕 New | Phase 2b |
+| PRJ-16 | Open the Projection tab | MiniRag collection, default controls | UMAP 2D runs; progress; points drawn | 🆕 New | Phase 3 |
+| PRJ-17 | 2D ↔ 3D | toggle dims | PCA instant; UMAP marked stale until Run | 🆕 New | Phase 3 |
+| PRJ-18 | Change Colour / Label | pick another property | recoloured instantly, no new run | 🆕 New | Phase 3 |
+| PRJ-19 | Click a point | point in view | object drawer opens with that object | 🆕 New | Phase 3 |
+| PRJ-20 | Cancel | during UMAP | cancelled badge, last frame kept | 🆕 New | Phase 3 |
+| PRJ-21 | Tab switch and back | leave and return | controls restored from status scope | 🆕 New | Phase 3 |
