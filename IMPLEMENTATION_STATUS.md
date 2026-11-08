@@ -8,7 +8,7 @@
 | 2a | Host core: shared contracts, protocol, sidecar, read, validate (+ Phase 0 fork hygiene) | ✅ landed @ 9c8e70b (/check clean after Phase 0) | `phase-2a-host-core` |
 | 2b | Host session, run state, placement, channels, hosts wiring | ✅ landed @ bdd806c (/check clean, fix-check 1 iter) | `phase-2b-host-session` |
 | 3 | Renderer: Projection tab (deck.gl 2D/3D, controls, colour, progress) | ✅ landed @ 512daf9 (/check clean, fix-check 1 iter; browser check pending) | `phase-3-projection-tab` |
-| 4 | Selection (lasso, breadcrumb) + query overlay | 🔄 implemented, awaiting /check | `phase-4-selection-overlay` |
+| 4 | Selection (lasso, breadcrumb) + query overlay | ✅ landed @ c468062 (/check clean first pass; browser check pending) | `phase-4-selection-overlay` |
 | 5 | data-lab: ADRs, ARCHITECTURE.md, launcher, submodule bump | ⏳ after the fork PR merges (other repo) | — |
 
 ## Phase 1 — Rust sidecar + Rust CI + pre-commit
