@@ -1,19 +1,27 @@
-import { useState } from 'react'
-import { Group, SegmentedControl, Stack } from '@mantine/core'
+import { useRef } from 'react'
+import type { Viewport } from '@deck.gl/core'
+import { Stack } from '@mantine/core'
 import { useQuery } from '@tanstack/react-query'
-import type { ProjectionMethod } from '@shared/types'
 import { api } from '../../lib/api'
-import { notifyErr } from '../../lib/notify'
 import { queryKeys } from '../../lib/query-keys'
 import { useApp } from '../../store'
+import { framesToDraw, onColourChange, shouldDraw } from './breadcrumb'
+import { ClearBreadcrumbModal } from './ClearBreadcrumbModal'
+import { isEdited } from './defaults'
+import { isKnown, isStale, matchesView } from './frame'
+import { canSelectLevel } from './lasso'
 import { ProjectionControls } from './ProjectionControls'
 import { ProjectionObjectDrawer } from './ProjectionObjectDrawer'
+import { ProjectionOverlays } from './ProjectionOverlays'
 import { ProjectionStage } from './ProjectionStage'
-import { ProjectionStatusLine } from './ProjectionStatusLine'
-import { controlsFromScope, defaultControls, isEdited, startRequest, type Controls } from './defaults'
-import { afterDelete, isKnown, isStale, matchesView } from './frame'
+import { ProjectionToolbar } from './ProjectionToolbar'
+import { useBreadcrumbSync } from './useBreadcrumbSync'
+import { useControlsState } from './useControlsState'
+import { useOverlay } from './useOverlay'
+import { usePointDrawer } from './usePointDrawer'
 import { useProjectionRun } from './useProjectionRun'
 import { useProjectionView } from './useProjectionView'
+import { useRunActions } from './useRunActions'
 
 interface Props {
   connectionId: string
@@ -21,71 +29,55 @@ interface Props {
   tenant?: string
 }
 
-const NO_CONTROLS: Controls = { limit: 100_000, filters: [], method: 'umap', dims: 2 }
-const NO_DELETED: ReadonlySet<string> = new Set()
-
 export function ProjectionPanel({ connectionId, collection, tenant }: Props) {
   const slice = useApp((s) => s.projection)
   const app = useApp.getState
-  const run = useProjectionRun()
-  const [edits, setEdits] = useState<Partial<Controls>>({})
-  const [uuid, setUuid] = useState<string>()
-  const [deletedIn, setDeletedIn] = useState<{ runId?: string; set: ReadonlySet<string> }>({ set: NO_DELETED })
+  const viewport = useRef<Viewport>()
+  const view = { connectionId, collection, tenant }
 
   const config = useQuery({
     queryKey: queryKeys.collection(connectionId, collection),
     queryFn: () => api.schema.getCollection(connectionId, collection)
   })
+  const levels = slice.breadcrumb
+  const level = levels[levels.length - 1]
+  const run = useProjectionRun(level?.runId, levels[0]?.runId)
   const known = isKnown(run.status) ? run.status : undefined
-  const matches = !known || matchesView(known.scope, { connectionId, collection, tenant })
+  const matches = !known || matchesView(known.scope, view)
   const scope = known && matches ? known.scope : undefined
-  // A matching run restores its inputs after a tab switch; edits overlay them until the next Run.
-  const base = scope ? controlsFromScope(scope) : config.data ? defaultControls(config.data) : NO_CONTROLS
-  const controls: Controls = { ...base, ...edits }
-  const deleted = deletedIn.runId === slice.runId ? deletedIn.set : NO_DELETED
+  useBreadcrumbSync(known, matches)
+  const { controls, handleChange } = useControlsState(config.data, scope)
 
+  const drawer = usePointDrawer({ ...view, runId: slice.runId, uuids: run.points?.uuids })
   const v = useProjectionView({
-    known: matches ? known : undefined,
+    frames: matches ? framesToDraw(run.status, level) : {},
+    props: known?.scope.props ?? [],
     points: run.points,
+    rootPoints: levels.length > 1 ? run.rootPoints : undefined,
     config: config.data,
     view: slice.view,
     dims: controls.dims,
     labelProp: slice.labelProp,
     colourProp: slice.colourProp,
-    deleted
+    deleted: drawer.deleted
+  })
+  const actions = useRunActions({
+    view, controls, scope, levels: matches ? levels : [], start: run.start, cancel: run.cancel
+  })
+  const overlay = useOverlay({
+    jobId: slice.jobId,
+    polledRunId: slice.runId,
+    scope,
+    level,
+    frame: v.frame,
+    epoch: matches && shouldDraw(run.status, level) ? known?.umap?.epoch : undefined,
+    uuids: run.points?.uuids
   })
 
-  const handleChange = (patch: Partial<Controls>): void => {
-    setEdits((e) => ({ ...e, ...patch }))
-    if (patch.dims) app().setProjectionDims(patch.dims)
-  }
-  const handleRun = (): void => {
-    if (controls.vector === undefined) return
-    app().setProjectionView(controls.method)
-    run.start(startRequest({ connectionId, collection, tenant }, controls))
-  }
-  const handlePointClick = (i: number): void => {
-    const id = run.points?.uuids[i]
-    if (id) setUuid(id)
-  }
-  // The frame is a snapshot: after the drawer changed the object, a missing object is only marked.
-  const handleChanged = async (): Promise<void> => {
-    const id = uuid
-    setUuid(undefined)
-    if (!id || !v.frame) return
-    try {
-      if ((await api.data.getObject(connectionId, collection, id, tenant)) === null) {
-        const next = afterDelete({ coords: v.frame.coords, n: v.frame.n, deleted }, id)
-        setDeletedIn({ runId: slice.runId, set: next.deleted })
-      }
-    } catch (e) {
-      notifyErr(e)
-    }
-  }
-
+  const uuidAt = (i: number): string | undefined => run.points?.uuids[i]
+  const queryAction = { label: 'Use as query', onClick: (i: number) => uuidAt(i) && overlay.usePoint(uuidAt(i) as string) }
   const rerun = isStale(known?.umap?.dims, controls.dims, slice.view)
-  const selectedIndex = uuid ? run.points?.uuids.indexOf(uuid) : undefined
-  const frame = matches ? v.frame : undefined
+
   return (
     <Stack h="100%" gap="xs" p="md" style={{ minHeight: 0 }}>
       <ProjectionControls
@@ -96,47 +88,63 @@ export function ProjectionPanel({ connectionId, collection, tenant }: Props) {
         labelProp={v.labelProp}
         colourProp={v.colourProp}
         onLabel={(p) => app().setProjectionLabel(p)}
-        onColour={(p) => app().setProjectionColour(p)}
+        onColour={(p) => app().setProjectionColour(onColourChange({ level: levels.length - 1 }, p).colourProp)}
         isRunning={run.isRunning}
-        onRun={handleRun}
+        onRun={actions.handleRun}
         onCancel={() => void run.cancel()}
       />
-      <Group justify="space-between">
-        <ProjectionStatusLine
-          status={run.status}
-          matches={matches}
-          edited={scope ? isEdited(controls, scope) : false}
-          rerunDims={rerun ? controls.dims : undefined}
-          locale={navigator.language}
-        />
-        <SegmentedControl
-          size="xs"
-          data={[{ value: 'pca', label: 'PCA view' }, { value: 'umap', label: 'UMAP view' }]}
-          value={slice.view}
-          onChange={(x) => app().setProjectionView(x as ProjectionMethod)}
-        />
-      </Group>
+      <ProjectionToolbar
+        status={run.status}
+        matches={matches}
+        edited={scope ? isEdited(controls, scope) : false}
+        rerunDims={rerun ? controls.dims : undefined}
+        levels={matches ? levels : []}
+        onBack={actions.handleBack}
+        view={slice.view}
+        onView={(x) => app().setProjectionView(x)}
+      />
       <ProjectionStage
-        frame={frame}
+        frame={matches ? v.frame : undefined}
         colors={v.colors}
         legend={v.scale.legend}
         legendTitle={v.colourProp ?? ''}
-        selectedIndex={selectedIndex}
-        fitKey={known?.runId ?? ''}
+        selectedIndex={drawer.selectedIndex}
+        highlight={overlay.highlight?.indices}
+        marker={overlay.marker}
+        fitKey={level?.runId ?? known?.runId ?? ''}
         isRunning={run.isRunning}
-        onPointClick={handlePointClick}
+        onPointClick={(i) => uuidAt(i) && drawer.setUuid(uuidAt(i))}
+        onViewportChange={(vp) => (viewport.current = vp)}
+        tooltipActions={[queryAction]}
         tooltipLines={v.tooltipLines}
-      />
-      {uuid && (
+      >
+        {v.frame && (
+          <ProjectionOverlays
+            overlay={overlay}
+            vectorDim={scope?.dim ?? 0}
+            dims={v.frame.dims}
+            coords={v.frame.coords}
+            n={v.frame.n}
+            getViewport={() => viewport.current}
+            levelIndices={run.points?.indices}
+            can={canSelectLevel(run.status, level)}
+            onSelect={actions.handleSelect}
+          />
+        )}
+      </ProjectionStage>
+      {drawer.uuid && (
         <ProjectionObjectDrawer
-          connectionId={connectionId}
-          collection={collection}
-          tenant={tenant}
-          uuid={uuid}
-          onClose={() => setUuid(undefined)}
-          onChanged={() => void handleChanged()}
+          {...view}
+          uuid={drawer.uuid}
+          onClose={() => drawer.setUuid(undefined)}
+          onChanged={() => void drawer.handleChanged(v.frame)}
         />
       )}
+      <ClearBreadcrumbModal
+        levels={actions.confirmLevels}
+        onCancel={() => actions.handleConfirm(false)}
+        onConfirm={() => actions.handleConfirm(true)}
+      />
     </Stack>
   )
 }

@@ -119,3 +119,29 @@
 - Territory was: a second hook, `useProjectionView.ts`, holds the decode and colour memoisation; deck.gl is ~660 kB, most of the bundle.
 - I did: `vitest.config.ts` excludes `projection/use*.ts`; `ProjectionPanel` is `React.lazy` in `CollectionView.tsx`. Extra files beyond the plan's eight: camera.ts (pure, tested), ProjectionTooltip, ProjectionLegend, ProjectionStatusLine, ProjectionObjectDrawer, useProjectionView, lib/query-keys.ts, status.fixtures.ts.
 - One-off or pattern?: one-off
+
+# Phase 4 deviations
+
+## resolveRun, hitsForPlacement and the Stage: signatures the spec could not satisfy
+- Plan assumed: `resolveRun(action, confirmed, {jobId, levels, controls, scope})`; `hitsForPlacement(results, mode, sourceUuid?)` also covers a vector query; only `ProjectionCanvas` is untouched and no other Phase 3 file changes.
+- Territory was: before the first run there is no `scope` to read the collection/tenant from; a vector query's marker needs the vector, which is not in the results; `ProjectionStage` (the Phase 3 wrapper) forwarded none of `highlight`/`marker`/`onViewportChange`/`tooltipActions`; the hit uuids to highlight are a second output of the same function.
+- I did: `ctx` carries `view` (connectionId/collection/tenant) instead of `scope`; `hitsForPlacement` takes a 4th `vector` argument and a sibling `hitUuidsOf` returns the uuids to highlight (source dropped for a point query); `ProjectionStage` gained passthrough props and a children slot; `useProjectionRun`/`useProjectionView` take the level on screen (the polled run differs from it after Back) and the frames as input.
+- One-off or pattern?: likely recurs: a pure-helper spec written before the call site exists.
+
+## A re-run keeps the old level until the new runId is known
+- Plan assumed: `resolveRun` returns the level already replaced for `rerunLevel`.
+- Territory was: the new runId only exists once `start` resolves; marking the level running under its old runId made the settle effect re-settle it from the old, terminal status.
+- I did: `resolveRun` returns the levels unchanged for a re-run; `rerunLevel(levels, index, runId, dims?)` replaces the level in `onSuccess`. A failed start leaves the level as it was.
+- One-off or pattern?: one-off
+
+## canSelect on a failed or incomplete read; stored levels
+- Plan assumed: `canSelect` is false only for a cancelled incomplete read or a run in flight, otherwise true.
+- Territory was: a `failed`/`empty` run with `readComplete` false would be offered a selection the host rejects; after Back the status polled is the popped child's, so the level on screen has no live status.
+- I did: any not-in-flight run with `readComplete` false is blocked (generic hint; the cancelled hint is unchanged). `canSelectLevel(status, level)` uses the live status when it owns the level, else the stored level outcome (`done` only).
+- One-off or pattern?: one-off
+
+## Back keeps the polled run; the level on screen is the breadcrumb top
+- Plan assumed: Back shows the stored frame (U-14).
+- Territory was: the host only serves the latest run's status, so after Back the polled status belongs to the popped child.
+- I did: the store's `jobId`/`runId` stay the latest run; the points query and frames follow the breadcrumb top (`framesToDraw`: live frames when the status owns the level, else the level's stored `pcaFrame`/`umapFrame`). A level also stores `n`, and an unmatched collection/tenant clears the breadcrumb in `useBreadcrumbSync`. "Use as query" runs the search at once instead of only arming it.
+- One-off or pattern?: likely recurs: any drill-down over a single-slot host.

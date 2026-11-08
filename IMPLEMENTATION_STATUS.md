@@ -8,7 +8,7 @@
 | 2a | Host core: shared contracts, protocol, sidecar, read, validate (+ Phase 0 fork hygiene) | ✅ landed @ 9c8e70b (/check clean after Phase 0) | `phase-2a-host-core` |
 | 2b | Host session, run state, placement, channels, hosts wiring | ✅ landed @ bdd806c (/check clean, fix-check 1 iter) | `phase-2b-host-session` |
 | 3 | Renderer: Projection tab (deck.gl 2D/3D, controls, colour, progress) | ✅ landed @ 512daf9 (/check clean, fix-check 1 iter; browser check pending) | `phase-3-projection-tab` |
-| 4 | Selection (lasso, breadcrumb) + query overlay | ⏳ pending | — |
+| 4 | Selection (lasso, breadcrumb) + query overlay | 🔄 implemented, awaiting /check | `phase-4-selection-overlay` |
 | 5 | data-lab: ADRs, ARCHITECTURE.md, launcher, submodule bump | ⏳ after the fork PR merges (other repo) | — |
 
 ## Phase 1 — Rust sidecar + Rust CI + pre-commit
@@ -36,3 +36,8 @@
 ## Phase 3 — Renderer: Projection tab
 **Implemented:** 2026-11-08 · **Agent:** vite-react · **Tooling (agent):** typecheck 0, lint 0 errors, vitest 524 passed (features/projection 100 % lines), build + web:build OK, audit unchanged, pnpm 9 frozen install OK; HTTP-level run on MiniRag (pca 2D + umap 3D → done, points by runId). Browser check pending.
 - New: `features/projection/` (Canvas, Panel, Controls, StatusLine, ObjectDrawer, Tooltip, Legend, hooks, frame/defaults/colors/progress/camera + tests), `lib/query-keys.ts`; store slice + tab in `CollectionView`; deck.gl 9.3.11, luma.gl 9.3.6, loaders.gl pins.
+
+## Phase 4 — Selection + query overlay
+**Implemented:** 2026-11-08 · **Agent:** vite-react · **Tooling (agent):** typecheck 0, lint 0 errors, vitest 596 passed (96.4 % lines), build + web:build OK, audit baseline. Browser check pending.
+- New: `lasso.ts`, `overlay.ts`, `breadcrumb.ts` + tests; SelectionLayer, QueryOverlay, ProjectionBreadcrumb, ClearBreadcrumbModal, ProjectionToolbar, ProjectionOverlays; hooks useLasso/useOverlay/useRunActions/useBreadcrumbSync/usePointDrawer/useControlsState.
+- Deviations (IMPLEMENTATION_NOTES.md): resolveRun context takes view; re-run keeps the old level until the new runId; "Use as query" runs immediately; collection/tenant change clears the breadcrumb.

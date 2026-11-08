@@ -6,7 +6,9 @@ export const queryKeys = {
   projection: {
     status: (jobId: string | undefined, runId: string | undefined) =>
       ['projection', jobId, runId] as const,
-    points: (runId: string | undefined) => ['projection', runId, 'points'] as const
+    points: (runId: string | undefined) => ['projection', runId, 'points'] as const,
+    /** `base` is `placementKey(...)`; `stamp` identifies the search whose query is placed. */
+    placement: (base: readonly unknown[], stamp: number | undefined) => [...base, stamp] as const
   },
   object: (connectionId: string, collection: string, uuid: string | undefined, tenant?: string) =>
     ['object', connectionId, collection, uuid, tenant] as const

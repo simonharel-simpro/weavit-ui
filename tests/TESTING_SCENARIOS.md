@@ -23,3 +23,10 @@
 | PRJ-19 | Click a point | point in view | object drawer opens with that object | 🆕 New | Phase 3 |
 | PRJ-20 | Cancel | during UMAP | cancelled badge, last frame kept | 🆕 New | Phase 3 |
 | PRJ-21 | Tab switch and back | leave and return | controls restored from status scope | 🆕 New | Phase 3 |
+| PRJ-22 | Lasso a cluster in 2D | ≥ 16 points | "UMAP on selection" → level 2 in breadcrumb | 🆕 New | Phase 4 |
+| PRJ-23 | Back in breadcrumb | from level 2 | level 1 frames drawn; in-flight child cancelled | 🆕 New | Phase 4 |
+| PRJ-24 | Root input edited at level 2 | change filter, Run | confirm "clears the breadcrumb", root run on accept | 🆕 New | Phase 4 |
+| PRJ-25 | Text query overlay | nearText "pump" | hits highlighted, marker "approximate (hit centroid)" | 🆕 New | Phase 4 |
+| PRJ-26 | Vector query in PCA view | vector of length D | exact marker | 🆕 New | Phase 4 |
+| PRJ-27 | Wrong-length vector | length ≠ D | inline error, no request | 🆕 New | Phase 4 |
+| PRJ-28 | Use as query | tooltip action on a point | search runs with that object | 🆕 New | Phase 4 |

@@ -1,14 +1,18 @@
 import { useRef } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import type { ProjectionStartRequest, ProjectionStatus } from '@shared/types'
+import type { ProjectionStartRequest, ProjectionStartResult, ProjectionStatus } from '@shared/types'
 import { api } from '../../lib/api'
 import { notifyErr } from '../../lib/notify'
 import { queryKeys } from '../../lib/query-keys'
 import { useApp } from '../../store'
 import { acceptPoints, isKnown, isTerminal, mergeStatus, pointsEnabled, pollInterval, sinceFor } from './frame'
 
-/** React glue only: every decision lives in the pure helpers of frame.ts. */
-export function useProjectionRun() {
+/**
+ * React glue only: every decision lives in the pure helpers of frame.ts and breadcrumb.ts.
+ * The status polled is the latest run's; `viewRunId` names the level on screen (it differs
+ * after Back) and `rootRunId` the root level whose column feeds the inherited colours (U-39).
+ */
+export function useProjectionRun(viewRunId?: string, rootRunId?: string) {
   const qc = useQueryClient()
   const jobId = useApp((s) => s.projection.jobId)
   const runId = useApp((s) => s.projection.runId)
@@ -21,6 +25,8 @@ export function useProjectionRun() {
     onSuccess: ({ jobId: j, runId: r }) => setRun(j, r),
     onError: (e) => notifyErr(e, 'Projection could not start')
   })
+  const startRun = (req: ProjectionStartRequest, onStarted?: (r: ProjectionStartResult) => void): void =>
+    start.mutate(req, { onSuccess: onStarted })
 
   const statusKey = queryKeys.projection.status(jobId, runId)
   const status = useQuery({
@@ -36,17 +42,20 @@ export function useProjectionRun() {
     refetchInterval: pollInterval
   })
 
-  const points = useQuery({
-    queryKey: queryKeys.projection.points(runId),
+  const pointsRun = viewRunId ?? runId
+  const pointsOf = (target: string | undefined, enabled: boolean) => ({
+    queryKey: queryKeys.projection.points(target),
     queryFn: () => {
       if (!jobId) throw new Error('no projection job')
-      return api.projection.status(jobId, { points: true, runId })
+      return api.projection.status(jobId, { points: true, runId: target })
     },
-    enabled: pointsEnabled(status.data),
+    enabled: enabled && pointsEnabled(status.data),
     staleTime: Infinity,
-    gcTime: Infinity,
-    select: (s) => acceptPoints(s, runId)
+    gcTime: Infinity, // U-39: a level's points are read once and kept for Back
+    select: (s: ProjectionStatus) => acceptPoints(s, target)
   })
+  const points = useQuery(pointsOf(pointsRun, true))
+  const rootPoints = useQuery(pointsOf(rootRunId, rootRunId !== undefined && rootRunId !== pointsRun))
 
   const cancel = async (): Promise<void> => {
     if (!jobId) return
@@ -63,7 +72,8 @@ export function useProjectionRun() {
     status: status.data,
     statusError: status.error,
     points: points.data,
-    start: start.mutate,
+    rootPoints: rootRunId === pointsRun ? points.data : rootPoints.data,
+    start: startRun,
     cancel,
     isRunning
   }
