@@ -1,0 +1,40 @@
+[package]
+name = "weavit-projector"
+version = "0.1.0"
+edition = "2024"
+description = "Streaming PCA + exact kNN + UMAP sidecar for the Weavit UI Projection tab"
+publish = false
+
+[lib]
+name = "weavit_projector"
+path = "src/lib.rs"
+
+[[bin]]
+name = "weavit-projector"
+path = "src/main.rs"
+
+[dependencies]
+umap-rs = "=0.4.5"
+ndarray = "0.17"
+rayon = "1.12"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+base64 = "0.23"
+rand = "0.9"
+thiserror = "2"
+
+[dev-dependencies]
+rand_distr = "=0.5.1"
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+all = { level = "deny", priority = -1 }
+unwrap_used = "deny"
+expect_used = "warn"

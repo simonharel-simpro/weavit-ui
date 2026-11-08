@@ -1,0 +1,1 @@
+{"protocol":1,"nMax":100000,"dim":384,"method":"umap","dims":3,"pcaDims":50,"nNeighbors":15,"minDist":0.1,"epochs":200,"seed":42,"frameEvery":10,"batchRows":0,"fitRows":10000}

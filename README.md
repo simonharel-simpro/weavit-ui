@@ -151,6 +151,12 @@ IPC-only data access.
 # 1. Install deps (pnpm recommended; npm works too)
 pnpm install
 
+#    Projection tab: install the Rust toolchain (rustup, 1.96.0) and build the sidecar
+pnpm projector:build
+
+#    Optional: run the same gates locally before every push
+pipx install pre-commit && pre-commit install --hook-type pre-push
+
 # 2. (optional) start a throwaway local Weaviate to point at
 #    HTTP :8080, gRPC :50051, anonymous access, no vectorizer module
 docker run -d --name weaviate -p 8080:8080 -p 50051:50051 \
