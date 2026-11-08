@@ -126,3 +126,12 @@ describe('chooseFrame', () => {
     expect(chooseFrame({}, 'pca', 2)).toBeUndefined()
   })
 })
+
+describe('chooseFrame round trip (3D → 2D, back to the UMAP view)', () => {
+  it('should draw the UMAP frame at its own dims whatever the dims control went through', () => {
+    const pca = new Float32Array(6)
+    const umap = { coords: new Float32Array([1, 2, 3, 4]), dims: 2 as const }
+    expect(chooseFrame({ pca, umap }, 'pca', 3)).toMatchObject({ kind: 'pca', dims: 3 })
+    expect(chooseFrame({ pca, umap }, 'umap', 2)).toEqual({ coords: umap.coords, n: 2, dims: 2, kind: 'umap' })
+  })
+})

@@ -27,6 +27,21 @@ export function pointsInPolygon(screenXY: Float32Array, n: number, polygon: [num
   return out
 }
 
+/** Screen (x, y) of the first n points of an interleaved 2D `coords`, through the viewport's `project`. */
+export function toScreenXY(
+  coords: Float32Array,
+  n: number,
+  project: (xyz: [number, number, number]) => number[]
+): Float32Array {
+  const xy = new Float32Array(n * 2)
+  for (let i = 0; i < n; i++) {
+    const p = project([coords[i * 2] as number, coords[i * 2 + 1] as number, 0])
+    xy[i * 2] = p[0] as number
+    xy[i * 2 + 1] = p[1] as number
+  }
+  return xy
+}
+
 /** Maps view-relative indices to root-dataset indices; the root level (no `levelIndices`) is the identity. */
 export function toRootIndices(viewIndices: number[], levelIndices?: number[]): number[] {
   if (!levelIndices) return viewIndices

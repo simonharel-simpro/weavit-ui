@@ -8,7 +8,8 @@ import { useApp } from '../../store'
 import { framesToDraw, onColourChange, shouldDraw } from './breadcrumb'
 import { ClearBreadcrumbModal } from './ClearBreadcrumbModal'
 import { isEdited } from './defaults'
-import { isKnown, isStale, matchesView } from './frame'
+import { cameraKey } from './camera'
+import { isKnown, isStale, isTerminal, matchesView } from './frame'
 import { canSelectLevel } from './lasso'
 import { ProjectionControls } from './ProjectionControls'
 import { ProjectionObjectDrawer } from './ProjectionObjectDrawer'
@@ -35,10 +36,7 @@ export function ProjectionPanel({ connectionId, collection, tenant }: Props) {
   const viewport = useRef<Viewport>()
   const view = { connectionId, collection, tenant }
 
-  const config = useQuery({
-    queryKey: queryKeys.collection(connectionId, collection),
-    queryFn: () => api.schema.getCollection(connectionId, collection)
-  })
+  const config = useQuery({ queryKey: queryKeys.collection(connectionId, collection), queryFn: () => api.schema.getCollection(connectionId, collection) })
   const levels = slice.breadcrumb
   const level = levels[levels.length - 1]
   const run = useProjectionRun(level?.runId, levels[0]?.runId)
@@ -61,9 +59,7 @@ export function ProjectionPanel({ connectionId, collection, tenant }: Props) {
     colourProp: slice.colourProp,
     deleted: drawer.deleted
   })
-  const actions = useRunActions({
-    view, controls, scope, levels: matches ? levels : [], start: run.start, cancel: run.cancel
-  })
+  const actions = useRunActions({ view, controls, scope, levels: matches ? levels : [], start: run.start, cancel: run.cancel })
   const overlay = useOverlay({
     jobId: slice.jobId,
     polledRunId: slice.runId,
@@ -76,6 +72,9 @@ export function ProjectionPanel({ connectionId, collection, tenant }: Props) {
 
   const uuidAt = (i: number): string | undefined => run.points?.uuids[i]
   const queryAction = { label: 'Use as query', onClick: (i: number) => uuidAt(i) && overlay.usePoint(uuidAt(i) as string) }
+  // A stored level (Back) is final; the live run settles at a terminal state.
+  const settled = !shouldDraw(run.status, level) || isTerminal(known?.state)
+  const fitKey = cameraKey({ runId: level?.runId ?? known?.runId ?? '', frame: v.frame, settled })
   const rerun = isStale(known?.umap?.dims, controls.dims, slice.view)
 
   return (
@@ -111,7 +110,7 @@ export function ProjectionPanel({ connectionId, collection, tenant }: Props) {
         selectedIndex={drawer.selectedIndex}
         highlight={overlay.highlight?.indices}
         marker={overlay.marker}
-        fitKey={level?.runId ?? known?.runId ?? ''}
+        fitKey={fitKey}
         isRunning={run.isRunning}
         onPointClick={(i) => uuidAt(i) && drawer.setUuid(uuidAt(i))}
         onViewportChange={(vp) => (viewport.current = vp)}

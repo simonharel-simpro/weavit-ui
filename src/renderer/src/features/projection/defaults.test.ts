@@ -102,3 +102,12 @@ describe('startRequest', () => {
     expect(() => startRequest(view, defaultControls({ namedVectors: [] }))).toThrow('needs a vector')
   })
 })
+
+describe('isEdited after a 2D → 3D → 2D round trip', () => {
+  it('should clear the edited state when the controls match the run scope again', () => {
+    const scope = scopeOf({ dims: 2 })
+    const base = controlsFromScope(scope)
+    expect(isEdited({ ...base, dims: 3 }, scope)).toBe(true)
+    expect(isEdited({ ...base, dims: 2 }, scope)).toBe(false)
+  })
+})

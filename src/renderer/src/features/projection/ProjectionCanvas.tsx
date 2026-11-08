@@ -5,7 +5,7 @@ import { OrbitView, OrthographicView } from '@deck.gl/core'
 import type { PickingInfo, Viewport } from '@deck.gl/core'
 import { Box, Center, Text } from '@mantine/core'
 import { drawable } from './frame'
-import { fitView } from './camera'
+import { fitView, viewStateMatches } from './camera'
 import { buildLayers } from './layers'
 import { ProjectionTooltip, type TooltipAction } from './ProjectionTooltip'
 
@@ -18,7 +18,7 @@ export interface ProjectionCanvasProps {
   highlight?: Set<number>
   /** One position (dims numbers) drawn as a query marker. */
   marker?: number[]
-  /** A new key refits the camera; frames of the same key keep it. */
+  /** A `cameraKey`: a new key refits the camera; frames of the same key keep it. */
   fitKey: string
   onPointClick(index: number): void
   onHover?(index: number | undefined): void
@@ -79,6 +79,11 @@ export function ProjectionCanvas(props: ProjectionCanvasProps) {
     else if (!tooltipActions?.length) setHover(undefined)
   }
 
+  // A leftover event of the previous view type (3D → 2D) must not replace the fitted state.
+  const handleViewState = ({ viewState }: { viewState: ViewState }): void => {
+    if (viewStateMatches(dims, viewState)) setCamera((c) => ({ ...c, view: viewState }))
+  }
+
   const handleAfterRender = (): void => {
     const vp = deck.current?.deck?.getViewports()[0]
     if (!vp || vp === lastViewport.current) return
@@ -94,7 +99,8 @@ export function ProjectionCanvas(props: ProjectionCanvasProps) {
         viewState={camera.view}
         controller
         layers={layers}
-        onViewStateChange={({ viewState }) => setCamera((c) => ({ ...c, view: viewState }))}
+        // A leftover event of the previous view type (3D → 2D) must not replace the fitted state.
+        onViewStateChange={handleViewState}
         onHover={handleHover}
         onClick={(info) => info.index >= 0 && onPointClick(info.index)}
         onAfterRender={handleAfterRender}
