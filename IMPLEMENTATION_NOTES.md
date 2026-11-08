@@ -13,7 +13,7 @@
 - One-off or pattern?: one-off
 
 ## Escalations
-- ESCALATION(ESC-1-1) [open] phase=1 tier=reversible :: UMAP repulsion_strength=0.5 to compensate umap-rs 0.4.5 halving attraction (move-other lost in step_epochs); confirm the value or switch crate
+- ESCALATION(ESC-1-1) [resolved] phase=1 tier=reversible :: UMAP repulsion_strength=0.5 to compensate umap-rs 0.4.5 halving attraction (move-other lost in step_epochs); confirm the value or switch crate => user 2026-11-08: keep repulsion_strength 0.5; document the umap-rs 0.4.5 attraction defect in the Phase 5 ADR
 
 ## Gate-gap fixes (cargo xtask lint, cargo deny)
 - Deviation: installed the linters recipe `xtask/` + `.cargo/config.toml` only; no githooks/justfile (repo uses pre-commit). Hook `cargo-xtask-lint` added (pre-push) and a `cargo xtask lint` step in the CI `projector` job. The root manifest is now a workspace (members `.` and `xtask`); root stays the default member, so `cargo build --release` and the binary path are unchanged.
