@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { back, pushLevel, rerunLevel, settleLevel, type Outcome } from './features/projection/breadcrumb'
 
 export type ConnStatus = 'idle' | 'connecting' | 'connected' | 'error'
 /** Tabs within a selected collection. */
@@ -6,12 +7,15 @@ export type MainTab = 'data' | 'schema' | 'query' | 'rag' | 'stats' | 'projectio
 /** Instance-wide views, shown when no collection is selected. */
 export type AdminView = 'overview' | 'aliases' | 'backup' | 'rbac' | 'cluster'
 
-/** One level of the projection drill-down; Phase 4 fills it. */
+/** One level of the projection drill-down (root = All, then one per selection). */
 export interface BreadcrumbLevel {
   jobId: string
   runId: string
   label: string
+  /** Root-relative; absent at the root. */
   indices?: number[]
+  /** Points in the level, known once it is done. */
+  n?: number
   pcaFrame?: string
   umapFrame?: string
   dims: 2 | 3
@@ -54,12 +58,26 @@ interface AppState {
   setProjectionLabel: (prop: string | null) => void
   setProjectionColour: (prop: string | null) => void
   setProjectionBreadcrumb: (breadcrumb: BreadcrumbLevel[]) => void
+  pushBreadcrumb: (level: BreadcrumbLevel) => void
+  settleBreadcrumb: (
+    runId: string,
+    outcome: Outcome,
+    extra?: { pcaFrame?: string; umapFrame?: string; n?: number }
+  ) => void
+  /** Pops `steps` levels; returns the jobId of an in-flight level the caller must cancel. */
+  backBreadcrumb: (steps?: number) => string | undefined
+  rerunBreadcrumb: (index: number, runId: string, dims: 2 | 3) => void
   resetProjection: () => void
 }
 
 const INITIAL_PROJECTION: ProjectionSlice = { view: 'pca', dims: 2, breadcrumb: [] }
 
-export const useApp = create<AppState>((set) => ({
+type Set = (fn: (s: AppState) => Partial<AppState>) => void
+function setCrumbs(set: Set, next: (levels: BreadcrumbLevel[]) => BreadcrumbLevel[]): void {
+  set((s) => ({ projection: { ...s.projection, breadcrumb: next(s.projection.breadcrumb) } }))
+}
+
+export const useApp = create<AppState>((set, get) => ({
   status: {},
   mainTab: 'data',
   adminView: 'overview',
@@ -87,5 +105,19 @@ export const useApp = create<AppState>((set) => ({
   setProjectionLabel: (labelProp) => set((s) => ({ projection: { ...s.projection, labelProp } })),
   setProjectionColour: (colourProp) => set((s) => ({ projection: { ...s.projection, colourProp } })),
   setProjectionBreadcrumb: (breadcrumb) => set((s) => ({ projection: { ...s.projection, breadcrumb } })),
+  pushBreadcrumb: (level) => setCrumbs(set, (l) => pushLevel(l, level)),
+  settleBreadcrumb: (runId, outcome, extra) => setCrumbs(set, (l) => settleLevel(l, runId, outcome, extra)),
+  backBreadcrumb: (steps = 1) => {
+    let levels = get().projection.breadcrumb
+    let cancelJobId: string | undefined
+    for (let i = 0; i < steps; i++) {
+      const popped = back(levels)
+      levels = popped.levels
+      cancelJobId ??= popped.cancelJobId
+    }
+    setCrumbs(set, () => levels)
+    return cancelJobId
+  },
+  rerunBreadcrumb: (index, runId, dims) => setCrumbs(set, (l) => rerunLevel(l, index, runId, dims)),
   resetProjection: () => set({ projection: INITIAL_PROJECTION })
 }))

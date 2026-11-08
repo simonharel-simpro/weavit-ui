@@ -1,15 +1,20 @@
 import { useMemo } from 'react'
 import { LABEL_MAX_CHARS } from '@shared/projection'
 import type { CollectionConfig, ProjectionMethod, ProjectionStatusKnown } from '@shared/types'
-import { colorScale, toColorAttribute, type ColorScale } from './colors'
+import type { DrawFrames } from './breadcrumb'
+import { colorScale, scaleForLevel, toColorAttribute, type ColorScale } from './colors'
 import { defaultRoles, resolveRole, roleColumn, scalarType } from './defaults'
 import { chooseFrame, decodeCoords, type Frame } from './frame'
 
 type Points = NonNullable<ProjectionStatusKnown['points']>
 
 export interface ProjectionViewInput {
-  known: ProjectionStatusKnown | undefined
+  /** The frames to draw (live or a level's stored ones) and the run's prefetched props. */
+  frames: DrawFrames
+  props: string[]
   points: Points | undefined
+  /** The root run's points when a drill-down level is on screen (U-26, U-36, U-39). */
+  rootPoints?: Points
   config: CollectionConfig | undefined
   view: ProjectionMethod
   dims: 2 | 3
@@ -21,10 +26,10 @@ export interface ProjectionViewInput {
 
 /** React glue: decodes the frame once per payload and derives colours and tooltip text. */
 export function useProjectionView(input: ProjectionViewInput) {
-  const { known, points, config, view, dims, deleted } = input
-  const pcaB64 = known?.pca
-  const umapB64 = known?.umap?.coords
-  const umapDims = known?.umap?.dims
+  const { frames, props, points, rootPoints, config, view, dims, deleted } = input
+  const pcaB64 = frames.pca
+  const umapB64 = frames.umap?.coords
+  const umapDims = frames.umap?.dims
   const pca = useMemo(() => (pcaB64 ? decodeCoords(pcaB64) : undefined), [pcaB64])
   const umap = useMemo(
     () => (umapB64 && umapDims ? { coords: decodeCoords(umapB64), dims: umapDims } : undefined),
@@ -32,7 +37,6 @@ export function useProjectionView(input: ProjectionViewInput) {
   )
   const frame: Frame | undefined = useMemo(() => chooseFrame({ pca, umap }, view, dims), [pca, umap, view, dims])
 
-  const props = known?.scope.props ?? []
   const defaults = defaultRoles(config?.properties ?? [])
   const labelProp = resolveRole(input.labelProp, defaults.labelProp, props)
   const colourProp = resolveRole(input.colourProp, defaults.colourProp, props)
@@ -40,7 +44,11 @@ export function useProjectionView(input: ProjectionViewInput) {
   const colourCol = points ? roleColumn(points, colourProp) : undefined
   const colourType = scalarType(config?.properties.find((p) => p.name === colourProp) ?? { name: '', dataType: [] })
 
-  const scale: ColorScale = useMemo(() => colorScale(colourType, colourCol ?? []), [colourType, colourCol])
+  const rootCol = rootPoints ? roleColumn(rootPoints, colourProp) : undefined
+  const scale: ColorScale = useMemo(
+    () => (rootCol ? scaleForLevel(colourType, colourCol ?? [], rootCol) : colorScale(colourType, colourCol ?? [])),
+    [colourType, colourCol, rootCol]
+  )
   const n = frame?.n ?? 0
   const colors = useMemo(() => toColorAttribute(scale, n), [scale, n])
 

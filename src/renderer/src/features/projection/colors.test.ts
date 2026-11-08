@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { PropValue } from '@shared/types'
-import { colorScale, toColorAttribute } from './colors'
+import { colorScale, OTHER_COLOR, scaleForLevel, toColorAttribute, type Rgb } from './colors'
+import { roleColumn } from './defaults'
 
 const isGrey = ([r, g, b]: number[]): boolean => r === g && g === b
 
@@ -64,3 +65,56 @@ describe('colorScale', () => {
     expect(scale.legend).toHaveLength(1)
   })
 })
+
+describe('inherited colours (drill-down)', () => {
+  const RED: Rgb = [255, 0, 0]
+  const BLUE: Rgb = [0, 0, 255]
+
+  it("U-26: should inherit the root's category colours in a drill-down", () => {
+    const root = new Map<string, Rgb>([['a', RED], ['b', BLUE]])
+    const child = colorScale('text', ['b', 'c'], root)
+    expect(child.colorOf(0)).toEqual(BLUE)
+    expect(child.colorOf(1)).toEqual(OTHER_COLOR)
+    expect(child.legend.map((l) => l.label)).toEqual(['b', 'other'])
+  })
+
+  it("U-39: should build root colour maps from the root run's points", () => {
+    const rootPoints = pointsOf('L1', ['a', 'b', 'c', 'b'])
+    const levelPoints = pointsOf('L2', ['b'])
+    const rootCol = roleColumn(rootPoints, 'cat') ?? []
+    const levelCol = roleColumn(levelPoints, 'cat') ?? []
+    const root = colorScale('text', rootCol)
+    expect([...(root.categories ?? new Map()).keys()].sort()).toEqual(['a', 'b', 'c'])
+    const level = scaleForLevel('text', levelCol, rootCol)
+    expect([...(level.categories ?? new Map()).keys()].sort()).toEqual(['a', 'b', 'c'])
+    expect(level.colorOf(0)).toEqual(root.colorOf(1))
+  })
+
+  it('U-36: should keep root numeric colours in a drill-down', () => {
+    const root = colorScale('int', [1990, 2000, 2020])
+    const plain = colorScale('int', [2000, 2005, 2010])
+    const inherited = colorScale('int', [2000, 2005, 2010], undefined, root.range)
+    expect(root.range).toEqual({ min: 1990, max: 2020 })
+    expect(plain.colorOf(0)).not.toEqual(root.colorOf(1))
+    expect(inherited.colorOf(0)).toEqual(root.colorOf(1))
+  })
+
+  it('U-36: should clamp a value outside the inherited range to the ramp ends', () => {
+    const root = colorScale('int', [1990, 1995, 2020])
+    const wide = colorScale('int', [1900, 1995, 2100], undefined, root.range)
+    expect(wide.colorOf(0)).toEqual(root.colorOf(0))
+    expect(wide.colorOf(1)).toEqual(root.colorOf(1))
+    expect(wide.colorOf(2)).toEqual(root.colorOf(2))
+  })
+
+  it('should fall back to the level own colours when the root column is unavailable', () => {
+    const own = colorScale('text', ['x', 'y'])
+    const level = scaleForLevel('text', ['x', 'y'], undefined)
+    expect(level.colorOf(0)).toEqual(own.colorOf(0))
+    expect(level.colorOf(1)).toEqual(own.colorOf(1))
+  })
+})
+
+function pointsOf(runId: string, cat: PropValue[]): Parameters<typeof roleColumn>[0] {
+  return { uuids: cat.map((_, i) => `u${i}`), props: ['cat'], columns: [cat], runId }
+}
