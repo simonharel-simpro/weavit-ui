@@ -29,3 +29,21 @@ export function fitView(coords: Float32Array, n: number, dims: 2 | 3, width: num
   const zoom = extent > 0 ? Math.log2((FILL * Math.min(width, height)) / extent) : 0
   return { target: mid as FitView['target'], zoom }
 }
+
+/**
+ * Identity of one camera fit. A new key refits; frames sharing a key keep the user's camera.
+ * It changes with the run, the frame on screen (PCA and UMAP have different extents), its dims,
+ * and once more when the run settles, because the first streamed UMAP frame is not the final extent.
+ */
+export function cameraKey(f: {
+  runId: string
+  frame?: { kind: 'pca' | 'umap'; dims: 2 | 3 }
+  settled: boolean
+}): string {
+  return `${f.runId}:${f.frame?.kind ?? 'none'}:${f.frame?.dims ?? 0}:${f.settled ? 'final' : 'live'}`
+}
+
+/** An OrbitView state carries rotationX; an OrthographicView state never does. */
+export function viewStateMatches(dims: 2 | 3, viewState: Record<string, unknown>): boolean {
+  return ('rotationX' in viewState) === (dims === 3)
+}
