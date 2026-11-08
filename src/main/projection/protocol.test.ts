@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { decodeF32, MAX_CELLS, NN_DEFAULT } from '@shared/projection'
 import {
+  encodeF32,
   encodeHeader,
   HEADER_DEFAULTS,
   LineSplitter,
@@ -135,5 +136,14 @@ describe('parseMessage', () => {
     ['a non-base64 payload', '{"type":"pca50","n":0,"pcaDims":2,"coords":"%%%"}']
   ])('rejects %s', (_label, line) => {
     expect(() => parseMessage(line)).toThrow(ProtocolError)
+  })
+})
+
+describe('encodeF32', () => {
+  it('round-trips through decodeF32 as little-endian bytes', () => {
+    const values = [1.5, -2, 0, 3.25e-7, 65504]
+    const s = encodeF32(new Float32Array(values))
+    expect(s).toBe(b64(values))
+    expect(decoded(s)).toEqual(values.map(Math.fround))
   })
 })

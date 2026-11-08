@@ -56,6 +56,8 @@ import * as permissions from '../weaviate/permissions'
 import * as cluster from '../weaviate/cluster'
 import * as admin from '../weaviate/admin'
 import { errorMessage } from '../util'
+import type { ProjectionSession } from '../projection/session'
+import { cancelArgsSchema, placeQuerySchema, statusArgsSchema } from '../projection/validate'
 
 function withFlags(list: ConnectionConfig[]): ConnectionWithSecretFlag[] {
   return list.map((c) => ({ ...c, hasApiKey: hasSecret(c.id) }))
@@ -93,7 +95,7 @@ function handle<Args extends unknown[], R>(
   register(channel, fn as unknown as Handler)
 }
 
-export function registerHandlers(on: Register): void {
+export function registerHandlers(on: Register, deps: { projection: ProjectionSession }): void {
   register = on
   // ── Connections ───────────────────────────────────────────────────────────
   handle(CH.connections.list, () => withFlags(loadConnections()))
@@ -391,4 +393,23 @@ export function registerHandlers(on: Register): void {
   handle(CH.history.listSaved, () => loadSavedQueries())
   handle(CH.history.save, (q: Omit<SavedQuery, 'id' | 'savedAt'>) => saveQuery(q))
   handle(CH.history.deleteSaved, (id: string) => deleteSavedQuery(id))
+
+  registerProjection(deps.projection)
+}
+
+/** Every argument is parsed with zod; `status` never throws (F-12). */
+function registerProjection(projection: ProjectionSession): void {
+  handle(CH.projection.start, (req: unknown) => projection.start(req))
+  // Parse the args as received: IPC keeps a trailing `undefined`, the web transport drops it.
+  handle(CH.projection.status, (...args: unknown[]) => {
+    const jobId = typeof args[0] === 'string' ? args[0] : ''
+    try {
+      const [id, opts] = statusArgsSchema.parse(args)
+      return projection.status(id, opts)
+    } catch {
+      return { jobId, state: 'unknown' }
+    }
+  })
+  handle(CH.projection.cancel, (...args: unknown[]) => projection.cancel(cancelArgsSchema.parse(args)[0]))
+  handle(CH.projection.placeQuery, (req: unknown) => projection.placeQuery(placeQuerySchema.parse(req)))
 }

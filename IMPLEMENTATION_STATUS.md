@@ -6,7 +6,7 @@
 |-------|-------|--------|--------|
 | 1 | Rust sidecar `weavit-projector` + Rust CI job + pre-commit | ✅ landed @ 2ae261e (/check clean, fix-check 1 iter) | `phase-1-rust-sidecar` |
 | 2a | Host core: shared contracts, protocol, sidecar, read, validate (+ Phase 0 fork hygiene) | ✅ landed @ 9c8e70b (/check clean after Phase 0) | `phase-2a-host-core` |
-| 2b | Host session, run state, placement, channels, hosts wiring | ⏳ pending | — |
+| 2b | Host session, run state, placement, channels, hosts wiring | 🔄 implemented, awaiting /check | `phase-2b-host-session` |
 | 3 | Renderer: Projection tab (deck.gl 2D/3D, controls, colour, progress) | ⏳ pending | — |
 | 4 | Selection (lasso, breadcrumb) + query overlay | ⏳ pending | — |
 | 5 | data-lab: ADRs, ARCHITECTURE.md, launcher, submodule bump | ⏳ after the fork PR merges (other repo) | — |
@@ -27,3 +27,8 @@
 - Electron 37 → 43.8.3, electron-builder 25 → 26.18.0, zod 3 → 4.6.7; ESLint 10 flat config (+ hook + CI step); 16 range overrides in both `pnpm-workspace.yaml` and `package.json#pnpm`; `packages: ['.']` repairs the pnpm 9 CI install.
 - `pnpm audit --audit-level=moderate` exit 0 (GHSA-g3hv-75wg-m249 / GHSA-3g3m-2fjr-6pw4 ignored until #34). typecheck, lint, 425 tests, build, web:build, pack:dir, pnpm 9 frozen install all pass.
 - Pending: GUI smoke of Electron 43 on a native display.
+
+## Phase 2b — Host session, run state, placement, wiring
+**Implemented:** 2026-11-08 · **Agent:** general-purpose · **Tooling (agent):** typecheck 0, lint 0 errors, vitest 482 passed (lines 97 %), pre-commit green; live web-host run on MiniRag (41 pts): read → done, selection → done, unknown jobId → unknown, no orphan sidecar after SIGTERM
+- New: `projection/{place,state,run,source,session,drive}.ts` + tests, `ipc/registry.test.ts`; wiring in `ipc/registry.ts`, `ipc/electron.ts`, `main/index.ts`, `web/main.ts`; `encodeF32` in protocol.
+- Deviations (IMPLEMENTATION_NOTES.md): `drive.ts` split; contracts added (`encodeF32`, `Run.n`); cancel drops the in-flight page; supersede on commit only; placement edge weights.

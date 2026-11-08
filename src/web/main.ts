@@ -6,6 +6,7 @@ import { webHost } from './webHost'
 import { seedDataLabProfile } from './seed'
 import { createWebServer } from './server'
 import { setExtraHeaders } from '../main/weaviate/extraHeaders'
+import { createDefaultProjectionSession } from '../main/projection/session'
 
 // Same policy as the desktop main process: a dropped Weaviate/gRPC connection
 // must not take the whole server down.
@@ -36,8 +37,16 @@ if (openRouterKey) {
   console.log('[weavit-web] OpenRouter key loaded from WEAVIT_OPENROUTER_API_KEY')
 }
 
+// The server runs from out/web/server; the repo root (and the sidecar build) is three levels up.
+const projection = createDefaultProjectionSession(resolve(__dirname, '../../..'))
 const handlers = new Map<string, Handler>()
-registerHandlers((channel, fn) => handlers.set(channel, fn))
+registerHandlers((channel, fn) => handlers.set(channel, fn), { projection })
+for (const signal of ['SIGINT', 'SIGTERM'] as const) {
+  process.on(signal, () => {
+    projection.dispose() // F-13: no orphaned sidecar
+    process.exit(0)
+  })
+}
 
 const server = createWebServer({
   handlers,

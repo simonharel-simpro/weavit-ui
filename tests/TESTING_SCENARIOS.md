@@ -12,3 +12,8 @@
 | PRJ-08 | Multi-vector space | colbert vector | rejected at start, nothing fetched | 🆕 New | Phase 2a |
 | PRJ-09 | Stale or old binary | hello mismatch | killed, "rebuild the projector" message | 🆕 New | Phase 2a |
 | PRJ-10 | Slow Weaviate | pages 7 s apart | watchdog does not kill | 🆕 New | Phase 2a |
+| PRJ-11 | Read then drill down | 41-pt collection, select 20 | both runs done; root basis still places | 🆕 New | Phase 2b |
+| PRJ-12 | New start while running | second start | first killed only when the second commits | 🆕 New | Phase 2b |
+| PRJ-13 | Cancel mid-read | cancel after page 1 | partial dataset, points served, lasso disabled | 🆕 New | Phase 2b |
+| PRJ-14 | Unknown job | status('nope') | {state:'unknown'}, no throw | 🆕 New | Phase 2b |
+| PRJ-15 | Web host shutdown | SIGTERM | no orphan sidecar | 🆕 New | Phase 2b |
