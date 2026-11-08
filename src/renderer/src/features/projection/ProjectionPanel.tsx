@@ -1,15 +1,14 @@
 import { useState } from 'react'
-import { Box, Center, Group, Loader, SegmentedControl, Stack, Text } from '@mantine/core'
+import { Group, SegmentedControl, Stack } from '@mantine/core'
 import { useQuery } from '@tanstack/react-query'
 import type { ProjectionMethod } from '@shared/types'
 import { api } from '../../lib/api'
 import { notifyErr } from '../../lib/notify'
 import { queryKeys } from '../../lib/query-keys'
 import { useApp } from '../../store'
-import { ProjectionCanvas } from './ProjectionCanvas'
 import { ProjectionControls } from './ProjectionControls'
 import { ProjectionObjectDrawer } from './ProjectionObjectDrawer'
-import { ProjectionLegend } from './ProjectionLegend'
+import { ProjectionStage } from './ProjectionStage'
 import { ProjectionStatusLine } from './ProjectionStatusLine'
 import { controlsFromScope, defaultControls, isEdited, startRequest, type Controls } from './defaults'
 import { afterDelete, isKnown, isStale, matchesView } from './frame'
@@ -117,27 +116,17 @@ export function ProjectionPanel({ connectionId, collection, tenant }: Props) {
           onChange={(x) => app().setProjectionView(x as ProjectionMethod)}
         />
       </Group>
-      <Box pos="relative" flex={1} mih={0} bg="dark.8" style={{ borderRadius: 4, overflow: 'hidden' }}>
-        {frame ? (
-          <>
-            <ProjectionCanvas
-              coords={frame.coords}
-              dims={frame.dims}
-              n={frame.n}
-              colors={v.colors}
-              highlight={selectedIndex !== undefined && selectedIndex >= 0 ? new Set([selectedIndex]) : undefined}
-              fitKey={known?.runId ?? ''}
-              onPointClick={handlePointClick}
-              tooltipLines={v.tooltipLines}
-            />
-            <ProjectionLegend legend={v.scale.legend} title={v.colourProp ?? ''} />
-          </>
-        ) : (
-          <Center h="100%">
-            {run.isRunning ? <Loader size="sm" /> : <Text c="dimmed" size="sm">Pick a vector space and press Run.</Text>}
-          </Center>
-        )}
-      </Box>
+      <ProjectionStage
+        frame={frame}
+        colors={v.colors}
+        legend={v.scale.legend}
+        legendTitle={v.colourProp ?? ''}
+        selectedIndex={selectedIndex}
+        fitKey={known?.runId ?? ''}
+        isRunning={run.isRunning}
+        onPointClick={handlePointClick}
+        tooltipLines={v.tooltipLines}
+      />
       {uuid && (
         <ProjectionObjectDrawer
           connectionId={connectionId}
