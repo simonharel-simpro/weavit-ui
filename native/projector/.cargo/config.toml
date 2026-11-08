@@ -1,0 +1,5 @@
+# Drop this into your crate/workspace root so `cargo xtask ...` resolves to the
+# xtask binary. This is the idiomatic Rust way to ship project automation as a
+# real binary instead of shell/Python scripts.
+[alias]
+xtask = "run --quiet --package xtask --"

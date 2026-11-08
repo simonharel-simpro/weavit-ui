@@ -35,6 +35,7 @@ function fakeCollection() {
 
   // byRef returns the same namespace again, so a hop just prefixes the property
   // name it eventually reports — which is enough to assert the walk.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- stands in for the untyped client namespace
   const filterNamespace = (prefix: string): Record<string, any> => ({
     byProperty: (prop: string, length?: boolean) =>
       builder(`${prefix}${length ? `${prop}#length` : prop}`, PROPERTY_METHODS),

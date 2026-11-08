@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { Stack, Group, Text, Tabs, Select, Badge, Box, Loader } from '@mantine/core'
 import {
   IconTable,
@@ -5,6 +6,7 @@ import {
   IconSearch,
   IconSparkles,
   IconChartBar,
+  IconChartDots3,
   IconUsersGroup
 } from '@tabler/icons-react'
 import { useQuery } from '@tanstack/react-query'
@@ -17,6 +19,11 @@ import { GeneratePanel } from '../generate/GeneratePanel'
 import { StatsPanel } from '../stats/StatsPanel'
 import { TenantsPanel } from '../tenants/TenantsPanel'
 import { ErrorBoundary } from '../../components/ErrorBoundary'
+
+// deck.gl is most of the bundle; load it only when the Projection tab is opened.
+const ProjectionPanel = lazy(() =>
+  import('../projection/ProjectionPanel').then((m) => ({ default: m.ProjectionPanel }))
+)
 
 interface Props {
   connectionId: string
@@ -122,6 +129,9 @@ export function CollectionView({ connectionId, collection }: Props) {
           <Tabs.Tab value="stats" leftSection={<IconChartBar size={15} />}>
             Stats
           </Tabs.Tab>
+          <Tabs.Tab value="projection" leftSection={<IconChartDots3 size={15} />}>
+            Projection
+          </Tabs.Tab>
           {mtEnabled && (
             <Tabs.Tab value="tenants" leftSection={<IconUsersGroup size={15} />}>
               Tenants
@@ -175,6 +185,16 @@ export function CollectionView({ connectionId, collection }: Props) {
                 properties={config.data?.properties ?? []}
                 namedVectors={namedVectors}
               />
+            )}
+            {mainTab === 'projection' && (
+              <Suspense fallback={<Loader size="sm" m="md" />}>
+                <ProjectionPanel
+                  key={`${connectionId}:${collection}:${tenantScope ?? ''}`}
+                  connectionId={connectionId}
+                  collection={collection}
+                  tenant={tenantScope}
+                />
+              </Suspense>
             )}
             {mainTab === 'tenants' && mtEnabled && (
               <TenantsPanel connectionId={connectionId} collection={collection} />

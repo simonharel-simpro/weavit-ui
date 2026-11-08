@@ -47,6 +47,18 @@ function extractQuantizer(indexConfig: any): NamedVectorConfig['quantizer'] {
 }
 
 /**
+ * The projector's view of a vector index (D-18, D-19): a `dynamic` index nests
+ * its HNSW config, multi-vector settings included, under `hnsw` (U-48). The
+ * distance stays the server's string; the cosine default lives in `metricOf`.
+ */
+function projectorFields(indexConfig: any): Pick<NamedVectorConfig, 'multiVector' | 'distance'> {
+  return {
+    multiVector: indexConfig?.multiVector != null || indexConfig?.hnsw?.multiVector != null,
+    distance: typeof indexConfig?.distance === 'string' ? indexConfig.distance : undefined
+  }
+}
+
+/**
  * Every named vector space on the collection. Collections created before named
  * vectors existed report a single unnamed space, which we surface as `default`
  * so the UI has something to key on.
@@ -61,7 +73,8 @@ function extractNamedVectors(raw: any): NamedVectorConfig[] {
       indexConfig: v?.indexConfig ?? undefined,
       quantizer: extractQuantizer(v?.indexConfig),
       sourceProperties:
-        v?.vectorizer?.config?.sourceProperties ?? v?.properties ?? undefined
+        v?.vectorizer?.config?.sourceProperties ?? v?.properties ?? undefined,
+      ...projectorFields(v?.indexConfig)
     }))
   }
   const vectorizer = extractVectorizer(raw)
@@ -72,7 +85,8 @@ function extractNamedVectors(raw: any): NamedVectorConfig[] {
       vectorizer,
       indexType: extractVectorIndexType(raw),
       indexConfig: raw?.vectorIndexConfig ?? undefined,
-      quantizer: extractQuantizer(raw?.vectorIndexConfig)
+      quantizer: extractQuantizer(raw?.vectorIndexConfig),
+      ...projectorFields(raw?.vectorIndexConfig)
     }
   ]
 }

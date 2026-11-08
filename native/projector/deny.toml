@@ -1,0 +1,21 @@
+# cargo-deny policy for weavit-projector (Apache-2.0 fork).
+# Permissive licenses only. Dual/tri-licensed crates (r-efi: MIT OR Apache-2.0 OR LGPL-2.1+,
+# memchr: Unlicense OR MIT) are satisfied via their MIT/Apache option; no copyleft is allowed.
+[licenses]
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "Unicode-3.0",
+]
+
+[bans]
+multiple-versions = "warn"
+
+[advisories]
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"

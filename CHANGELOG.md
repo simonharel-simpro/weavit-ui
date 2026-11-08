@@ -6,6 +6,10 @@ All notable changes to Weavit UI are documented here. The format is based on
 
 ## [Unreleased]
 
+### Changed
+
+- Electron 43, electron-builder 26, zod 4; ESLint config; audit clean.
+
 ## [1.2.0] - 2026-08-11
 
 The administration release. Everything you previously dropped to `curl` or the Python

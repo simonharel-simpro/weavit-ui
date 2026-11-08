@@ -1,0 +1,48 @@
+# Local gates, run before a push: `pipx install pre-commit && pre-commit install --hook-type pre-push`
+default_install_hook_types: [pre-push]
+
+repos:
+  - repo: local
+    hooks:
+      - id: typecheck
+        name: typecheck
+        entry: pnpm typecheck
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]
+      - id: eslint
+        name: eslint
+        entry: pnpm lint
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]
+      - id: vitest
+        name: vitest
+        entry: pnpm test
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]
+      - id: cargo-fmt
+        name: cargo fmt
+        entry: cargo fmt --manifest-path native/projector/Cargo.toml --check
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]
+      - id: cargo-clippy
+        name: cargo clippy
+        entry: cargo clippy --manifest-path native/projector/Cargo.toml --all-targets -- -D warnings
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]
+      - id: cargo-xtask-lint
+        name: cargo xtask lint
+        entry: bash -c 'cd native/projector && cargo xtask lint'
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]

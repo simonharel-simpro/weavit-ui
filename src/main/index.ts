@@ -2,6 +2,7 @@ import { app, shell, BrowserWindow, session, nativeImage } from 'electron'
 import { join } from 'node:path'
 import appIcon from '../../resources/icon.png?asset'
 import { registerIpc } from './ipc/electron'
+import { createDefaultProjectionSession, type ProjectionSession } from './projection/session'
 import { closeAll } from './weaviate/connectionManager'
 import { migrateLegacyData } from './store/store'
 import { setStoreHost } from './store/host'
@@ -14,6 +15,7 @@ app.setName('Weavit UI')
 setStoreHost(electronHost)
 
 const isDev = !!process.env['ELECTRON_RENDERER_URL']
+let projection: ProjectionSession | undefined
 
 // A vector-DB client hits network failures routinely (dropped connections, bad
 // ports, unreachable gRPC). The Weaviate/gRPC stack can surface those as async
@@ -83,7 +85,8 @@ app.whenReady().then(() => {
   }
   migrateLegacyData()
   applyProductionCsp()
-  registerIpc()
+  projection = createDefaultProjectionSession(app.getAppPath())
+  registerIpc(projection)
   createWindow()
 
   app.on('activate', () => {
@@ -96,5 +99,6 @@ app.on('window-all-closed', () => {
 })
 
 app.on('before-quit', () => {
+  projection?.dispose()
   void closeAll()
 })

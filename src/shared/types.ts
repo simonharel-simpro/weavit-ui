@@ -123,6 +123,132 @@ export interface NamedVectorConfig {
   /** pq / bq / sq / rq settings if quantization is enabled. */
   quantizer?: { type: string; config?: Record<string, unknown> }
   sourceProperties?: string[]
+  /** A ColBERT-style multi-vector space (one vector per token); not projectable (D-18). */
+  multiVector?: boolean
+  /** The server's distance metric string, absent when the server reports none. */
+  distance?: VectorMetric
+}
+
+// ── Embedding projector ─────────────────────────────────────────────────────
+
+export type KnownMetric = 'cosine' | 'dot' | 'l2-squared' | 'hamming' | 'manhattan'
+/** Catch-all branch (U-37): an unknown server string is kept as is, never mapped to cosine. */
+export type VectorMetric = KnownMetric | (string & {})
+export type ProjectionMethod = 'pca' | 'umap'
+export type ProjectionStage = 'reading' | 'pca' | 'knn' | 'graph' | 'epochs'
+export type CapReason = 'limit' | 'dimension' | 'offsetLimit'
+export type ProjectionKnownState =
+  | 'reading'
+  | 'computing'
+  | 'done'
+  | 'failed'
+  | 'cancelled'
+  | 'superseded'
+  | 'empty'
+/** Scalar only: array properties are not fetched (D-21). */
+export type PropValue = string | number | boolean | null
+/** No colour/label inputs: they are view-only (D-21). */
+export interface ProjectionReadSource {
+  kind: 'read'
+  connectionId: string
+  collection: string
+  tenant?: string
+  vector: string
+  filters?: FilterNode[]
+  limit: number
+}
+export interface ProjectionSelectionSource {
+  kind: 'selection'
+  jobId: string
+  /** Root-relative indices. */
+  indices: number[]
+}
+export interface ProjectionStartRequest {
+  source: ProjectionReadSource | ProjectionSelectionSource
+  method: ProjectionMethod
+  dims: 2 | 3
+}
+export interface ProjectionStartResult {
+  jobId: string
+  runId: string
+}
+/** Echo of the run's inputs (U-6, U-24): the renderer restores its controls from it. */
+export interface ProjectionScope {
+  connectionId: string
+  collection: string
+  tenant?: string
+  vector: string
+  filters?: FilterNode[]
+  method: ProjectionMethod
+  dims: 2 | 3
+  limit: number
+  /** Prefetched properties. */
+  props: string[]
+  dim: number
+  metric: VectorMetric
+  /** Selection size. */
+  selection?: number
+}
+export interface ProjectionStatusKnown {
+  jobId: string
+  runId: string
+  state: ProjectionKnownState
+  stage?: ProjectionStage
+  progress?: { done: number; total?: number }
+  scope: ProjectionScope
+  /** Rows streamed to the sidecar so far; the final n once the read ends. */
+  n: number
+  readComplete: boolean
+  skipped?: { missing: number; dim: number; nonFinite: number; zeroNorm: number }
+  cap?: { read: number; matched?: number; reason: CapReason }
+  notice?: string
+  error?: string
+  frameVersion: number
+  /** Base64 f32, n×3. */
+  pca?: string
+  umap?: { coords: string; epoch: number; epochs: number; dims: 2 | 3 }
+  points?: {
+    /** This run's points in view order; a selection's subset. */
+    uuids: string[]
+    props: string[]
+    /** One column per prop, view order. */
+    columns: PropValue[][]
+    /** Root indices. */
+    indices?: number[]
+    /** The run these points belong to (U-39). */
+    runId: string
+  }
+}
+export type ProjectionStatus = ProjectionStatusKnown | { jobId: string; state: 'unknown' }
+export interface ProjectionStatusOptions {
+  /** frameVersion */
+  since?: number
+  points?: boolean
+  /** Whose points: the root run or a selection level (U-39). */
+  runId?: string
+}
+export type ProjectionQuery =
+  | { kind: 'vector'; vector: number[] }
+  | { kind: 'object'; uuid: string }
+  | {
+      kind: 'hits'
+      metric: 'distance' | 'score'
+      hits: { uuid: string; distance?: number; score?: number }[]
+    }
+export interface PlaceQueryRequest {
+  jobId: string
+  runId: string
+  view: 'pca' | 'umap'
+  query: ProjectionQuery
+}
+export interface PlaceQueryResult {
+  placed: boolean
+  reason?: string
+  coords?: number[]
+  approximate: boolean
+  method?: 'basis' | 'knn' | 'centroid' | 'mean' | 'point'
+  inView?: number
+  total?: number
 }
 
 export interface CollectionSummary {
@@ -1139,5 +1265,11 @@ export interface WeftApi {
     listSaved(): Promise<SavedQuery[]>
     save(query: Omit<SavedQuery, 'id' | 'savedAt'>): Promise<SavedQuery>
     deleteSaved(id: string): Promise<void>
+  }
+  projection: {
+    start(req: ProjectionStartRequest): Promise<ProjectionStartResult>
+    status(jobId: string, opts?: ProjectionStatusOptions): Promise<ProjectionStatus>
+    cancel(jobId: string): Promise<void>
+    placeQuery(req: PlaceQueryRequest): Promise<PlaceQueryResult>
   }
 }

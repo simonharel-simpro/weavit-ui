@@ -1,4 +1,4 @@
-import { Group, Text, Button, Badge, Box, Image } from '@mantine/core'
+import { Group, Text, Button, Box, Image } from '@mantine/core'
 import { IconPlus } from '@tabler/icons-react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'

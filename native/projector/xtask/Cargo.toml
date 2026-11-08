@@ -1,0 +1,18 @@
+[package]
+name = "xtask"
+version = "0.1.0"
+edition = "2021"
+publish = false
+license = "Apache-2.0"
+description = "Architectural linters for Rust CLI/MCP crates — the checks clippy can't express."
+
+# Zero dependencies on purpose: this must compile fast and run anywhere as a
+# git-hook step. All scanning is done with std only.
+
+[[bin]]
+name = "xtask"
+path = "src/main.rs"
+
+[lib]
+name = "xtask"
+path = "src/lib.rs"

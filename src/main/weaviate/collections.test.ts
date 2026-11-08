@@ -120,3 +120,45 @@ describe('toConfig', () => {
     expect(toConfig({ name: 'X' }).multiTenancy.enabled).toBe(false)
   })
 })
+
+describe('toConfig — projector fields', () => {
+  it('collections: should flag a multi-vector space and read its distance', () => {
+    const c = toConfig({
+      name: 'X',
+      vectorizers: {
+        colbert: { indexType: 'hnsw', indexConfig: { multiVector: { aggregation: 'maxSim' } } },
+        body: { indexType: 'hnsw', indexConfig: { distance: 'dot' } }
+      }
+    })
+    const colbert = c.namedVectors.find((v) => v.name === 'colbert')
+    const body = c.namedVectors.find((v) => v.name === 'body')
+    expect(colbert?.multiVector).toBe(true)
+    expect(body?.distance).toBe('dot')
+    expect(body?.multiVector).toBe(false)
+  })
+
+  it('U-48: should flag a multi-vector space behind a dynamic index', () => {
+    const c = toConfig({
+      name: 'X',
+      vectorizers: {
+        v: {
+          indexType: 'dynamic',
+          indexConfig: {
+            type: 'dynamic',
+            distance: 'cosine',
+            hnsw: { multiVector: { aggregation: 'maxSim' } },
+            flat: { distance: 'cosine' }
+          }
+        }
+      }
+    })
+    expect(c.namedVectors[0].multiVector).toBe(true)
+  })
+
+  it('reads the default space distance and leaves an absent one undefined', () => {
+    const legacy = toConfig({ name: 'X', vectorizer: 'none', vectorIndexConfig: { distance: 'l2-squared' } })
+    expect(legacy.namedVectors[0]).toMatchObject({ distance: 'l2-squared', multiVector: false })
+    const bare = toConfig({ name: 'X', vectorizer: 'none', vectorIndexConfig: { ef: 64 } })
+    expect(bare.namedVectors[0].distance).toBeUndefined()
+  })
+})
