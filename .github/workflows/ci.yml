@@ -21,3 +21,25 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build
+
+  projector:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: native/projector
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.96.0
+        with:
+          components: clippy, rustfmt, llvm-tools-preview
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: native/projector
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-llvm-cov@0.9.1
+      - run: cargo fmt --check
+      - run: cargo clippy --all-targets -- -D warnings
+      - run: cargo xtask lint
+      - run: cargo test --locked
+      - run: cargo llvm-cov --locked --fail-under-lines 70

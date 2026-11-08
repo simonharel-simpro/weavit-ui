@@ -1,0 +1,12 @@
+{"type":"hello","protocol":1}
+{"type":"progress","stage":"pca","done":1000,"total":1000}
+{"type":"basis","mean":"AAAAPwAAwL8=","components":"AAAAPwAAgD4AAEC/AACAPw==","pcaDims":2}
+{"type":"pcaChunk","offset":0,"count":2,"coords":"AACAPwAAAEAAAEBAAACAwAAAsEAAAAAA"}
+{"type":"pca50","n":2,"pcaDims":2,"coords":"AACAPgAAAL8AAMA/AAAAQA=="}
+{"type":"progress","stage":"knn","done":128,"total":2000}
+{"type":"progress","stage":"graph","done":1,"total":1}
+{"type":"progress","stage":"epochs","done":10,"total":200}
+{"type":"notice","message":"UMAP needs at least 16 points; PCA only"}
+{"type":"frame","stage":"umap","epoch":10,"epochs":200,"dims":2,"n":2,"coords":"AACAvwAAAD8AABBAAABAQA=="}
+{"type":"done","n":2}
+{"type":"error","message":"input ended mid-row"}

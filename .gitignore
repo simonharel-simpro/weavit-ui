@@ -12,3 +12,6 @@ coverage/
 # Local AI-assistant settings — machine-specific tool permissions, not project config
 .claude/
 CLAUDE.md
+
+# Rust sidecar build output
+native/projector/target/

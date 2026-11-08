@@ -1,0 +1,9 @@
+# Fixture crate (not compiled — scanned by the linters as test data).
+[package]
+name = "clean-fixture"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+clap = { version = "4", features = ["derive"] }
+anyhow = "1"
